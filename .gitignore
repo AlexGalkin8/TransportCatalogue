@@ -1,0 +1,7 @@
+Debug/
+Release/
+.vs/
+#TransportCatalogue.sln
+#TransportCatalogue.vcxproj
+#TransportCatalogue.vcxproj.filters
+#TransportCatalogue.vcxproj.user
