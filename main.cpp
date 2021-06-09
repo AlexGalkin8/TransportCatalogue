@@ -1,11 +1,17 @@
+#include "transport_catalogue.h"
+#include "input_reader.h"
+#include "stat_reader.h"
+
 #include <iostream>
 #include <vector>
 
 
 int main()
 {
+    TransportCatalogue transport_catalogue;
+
     size_t num_command = 0;
-    std::vector<std::string> input_commands =
+    std::vector<std::string> requests_for_input =
     {
         "Stop Tolstopaltsevo: 55.611087, 37.208290",
         "Stop Marushkino: 55.595884, 37.209755",
@@ -19,24 +25,25 @@ int main()
         "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164",
     };
 
-    std::vector<std::string> out_commands =
+    std::vector<std::string>  requests_for_output =
     {
         "Bus 256",
         "Bus 750",
         "Bus 751"
     };
 
-
-    std::cin >> num_command;
+    num_command = requests_for_input.size();
+    //std::cin >> num_command;
     for (size_t i = 0; i < num_command; i++)
     {
-        //Read Input Request
+        ReadInputRequest(transport_catalogue, requests_for_input.at(i));
     }
 
-    std::cin >> num_command;
+    num_command = requests_for_output.size();
+    //std::cin >> num_command;
     for (size_t i = 0; i < num_command; i++)
     {
-
+        ReadOutRequest(transport_catalogue, requests_for_input.at(i));
     }
 
 }
