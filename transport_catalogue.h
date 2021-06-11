@@ -15,6 +15,7 @@
 #include <optional>
 #include <algorithm>
 #include <execution>
+#include <utility>
 
 //enum class RequestType;         // Типы запросов к базе данных
 //enum class ResponceType;
@@ -159,59 +160,21 @@ public:
         ParseRequest(request_str);
     }
 
-    void ParseRequest(std::string_view request_str)
+    ~Request()
     {
-        if (request_str.empty())
-            throw std::invalid_argument("ParseRequests: Empty request!");
+        Clear();
+    }
 
-        std::string_view word = ReadWord(request_str);
-
-        // Определяем какой тип запроса
-        if (word == "Bus")
+    void Clear()
+    {
+        if (stop_ != nullptr)
+            delete stop_;
+        else if (transport_ != nullptr)
+            delete transport_;
+        else if (stop_ != nullptr)
+            route_.clear();
+        else
         {
-            // Проверяем последний символ - есть ':' или нет
-            if (request_str.find(':') != std::string_view::npos)
-            {
-                word = ReadWord(request_str, ':');
-                request_type = RequestType::ADD_ROUTE;
-            }
-            else
-            {
-                word = ReadWord(request_str, '\n');
-                request_type = RequestType::ROUTE_INFO;
-            }
-        }
-        else if (word == "Stop")
-            request_type = RequestType::ADD_STOP;
-
-
-        if (request_type == RequestType::ADD_ROUTE)
-        {
-            transport_     = new Transport{ std::string{ word } };
-            circular_route = request_str.find('>') != std::string_view::npos;
-            char delimiter = (circular_route) ? '>' : '-';
-
-            while (request_str.size() != 0)
-            {
-                Stop stop;
-                word = ReadWord(request_str, delimiter);
-                stop.stop_name = std::string{ word };
-                route_.push_back(stop);
-            }
-        }
-        else if (request_type == RequestType::ADD_STOP)
-        {
-            stop_ = new Stop();
-            word = ReadWord(request_str, ':');
-            stop_->stop_name = std::string{ word };
-
-            word = ReadWord(request_str, ',');
-            stop_->coordinates.lat = std::stod(std::string{ word });
-            stop_->coordinates.lng = std::stod(std::string{ request_str });
-        }
-        else if (request_type == RequestType::ROUTE_INFO)
-        {
-            transport_ = new Transport{ std::string{ word } };
         }
     }
 
@@ -240,22 +203,60 @@ public:
         return stop_;
     }
 
-    void Clear()
+    void ParseRequest(std::string_view request_str)
     {
-        if (stop_ != nullptr)
-            delete stop_;
-        else if (transport_ != nullptr)
-            delete transport_;
-        else if (stop_ != nullptr)
-            route_.clear();
-        else
-        {
-        }
-    }
+        if (request_str.empty())
+            throw std::invalid_argument("ParseRequests: Empty request!");
 
-    ~Request()
-    {
-        Clear();
+        std::string_view word = ReadWord(request_str);
+
+        // Определяем какой тип запроса
+        if (word == "Bus")
+        {
+            // Проверяем последний символ - есть ':' или нет
+            if (request_str.find(':') != std::string_view::npos)
+            {
+                word = ReadWord(request_str, ':');
+                request_type = RequestType::ADD_ROUTE;
+            }
+            else
+            {
+                word = ReadWord(request_str, '\n');
+                request_type = RequestType::ROUTE_INFO;
+            }
+        }
+        else if (word == "Stop")
+            request_type = RequestType::ADD_STOP;
+
+
+        if (request_type == RequestType::ADD_ROUTE)
+        {
+            transport_ = new Transport{ std::string{ word } };
+            circular_route = request_str.find('>') != std::string_view::npos;
+            char delimiter = (circular_route) ? '>' : '-';
+
+            while (request_str.size() != 0)
+            {
+                Stop stop;
+                word = ReadWord(request_str, delimiter);
+                stop.stop_name = std::string{ word };
+                route_.push_back(stop);
+            }
+        }
+        else if (request_type == RequestType::ADD_STOP)
+        {
+            stop_ = new Stop();
+            word = ReadWord(request_str, ':');
+            stop_->stop_name = std::string{ word };
+
+            word = ReadWord(request_str, ',');
+            stop_->coordinates.lat = std::stod(std::string{ word });
+            stop_->coordinates.lng = std::stod(std::string{ request_str });
+        }
+        else if (request_type == RequestType::ROUTE_INFO)
+        {
+            transport_ = new Transport{ std::string{ word } };
+        }
     }
 
     static std::string_view ReadWord(std::string_view& str, const char end_char = ' ')
@@ -265,6 +266,7 @@ public:
 
         std::string_view out = str;
         bool need_reduction = false;
+
         for (size_t i = 0; i < str.size(); i++)
         {
             if (out.at(i) == end_char)
@@ -274,6 +276,7 @@ public:
                 break;
             }
         }
+
         if (end_char == ' ' && need_reduction)
         {
             str.remove_prefix(out.size() + 1);

@@ -16,8 +16,7 @@ void ReadInputRequest(TransportCatalogue& transport_catalogue, std::istream& is)
     for (size_t i = 0; i < num_request; i++)
     {
         std::getline(is, request_words);
-        Request request(request_words);
-        transport_catalogue.GetRequest(request);
+        transport_catalogue.GetRequest(Request(request_words));
     }
 }
 
