@@ -35,7 +35,7 @@ struct Stop
     {
     }
 
-    Stop(const std::string& stop_name, const Coordinates coordinates)
+    Stop(const std::string& stop_name, const Coordinates& coordinates)
         :stop_name(stop_name)
         , coordinates(coordinates)
     {
@@ -88,7 +88,6 @@ struct Route
             return 0.0;
 
         double      route_length = 0.0;
-        //bool        is_count     = false;
         Coordinates from = route_stops.at(0)->coordinates;
         Coordinates to;
 
@@ -188,10 +187,8 @@ public:
 
         if (request_type == RequestType::ADD_ROUTE)
         {
-            transport_ = new Transport{ std::string{ word } };
-
+            transport_     = new Transport{ std::string{ word } };
             circular_route = request_str.find('>') != std::string_view::npos;
-            /*std::find(request_str.cbegin(), request_str.cend(), '>') != request_str.cend()*/;
             char delimiter = (circular_route) ? '>' : '-';
 
             while (request_str.size() != 0)
@@ -362,7 +359,7 @@ public:
     std::optional<const Route*> FindRoute(const std::string_view route_name) const
     {
         auto it = routes_.find(Transport{ std::string{ route_name } });
-
+        //auto it = std::find(std::execution::par, routes_.begin(), routes_.end(), Transport{ static_cast<std::string>(route_name ) });
         if (it == routes_.end())
             return std::nullopt;
         else
@@ -371,9 +368,9 @@ public:
 
     std::optional<const Stop*> FindStop(const std::string_view stop_name) const
     {
-        std::find(std::execution::par, stops_.begin(), stops_.end(), Stop{ static_cast<std::string>(stop_name), Coordinates() });
-        auto it = std::find_if(std::execution::par, stops_.begin(), stops_.end(), [&stop_name]
-        (const Stop& stop) { return stop.stop_name == static_cast<std::string>(stop_name); });
+        //auto it = std::find(std::execution::par, stops_.begin(), stops_.end(), Stop{ static_cast<std::string>(stop_name), Coordinates() });
+        auto it = std::find_if(stops_.begin(), stops_.end(), [&stop_name]
+            (const Stop& stop) { return stop.stop_name == static_cast<std::string>(stop_name); });
 
         if (it == stops_.end())
             return std::nullopt;
@@ -383,7 +380,7 @@ public:
 
 private:
     std::unordered_map<Transport, Route, TransportHasher> routes_;
-    std::vector<Stop> stops_;
+    std::deque<Stop> stops_;
     //std::unordered_set<Stop, StopHasher> stops_; // при работе с этим контейнером не работает AddStop usd: Уже вообще ничего
 
     void AddStop(const Stop& stop)
@@ -421,7 +418,6 @@ private:
 
         // круговой маршрут или нет
         route.circular_route = circular_route;
-        //route.circular_route = *route.route_stops.begin() == *(route.route_stops.end() - 1);
 
         // добавляем новый маршрут или меняем старый
         routes_[transport] = route;
@@ -434,7 +430,7 @@ private:
             return std::nullopt;
 
         const Route& route = *answer.value();
-        RouteInfo    out_info;
+        RouteInfo out_info;
 
         out_info.transport_info = Transport{ std::string { route_name } };
         out_info.route_length = route.CalculateRouteLength();

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string_view>
 #include <iomanip>
-
+#include <sstream>
 
 // Функция вывода ответа из справочника в поток ввода/вывода.
 void PrintRouteInfo(std::ostream& out, const Responce& responce)
@@ -36,6 +36,16 @@ void ReadOutRequest(TransportCatalogue& transport_catalogue, std::istream& is)
     for (size_t i = 0; i < num_request; i++)
     {
         std::getline(is, request_words);
+        Request request(request_words);
+        PrintRouteInfo(std::cout, transport_catalogue.GetRequest(request));
+    }
+}
+
+void ReadOutRequest(TransportCatalogue& transport_catalogue, std::stringstream& is)
+{
+    std::string request_words;
+    while (std::getline(is, request_words))
+    {
         Request request(request_words);
         PrintRouteInfo(std::cout, transport_catalogue.GetRequest(request));
     }
