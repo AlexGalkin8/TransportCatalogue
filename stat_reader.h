@@ -18,7 +18,7 @@ void PrintRouteInfo(std::ostream& out, const Responce& responce)
     }
     else
     {
-        out << out_info.transport_info.number << ": "
+        out << "Bus " << out_info.transport_info.number << ": "
             << out_info.stops_on_route << " stops on route, "
             << out_info.unique_stops << " unique stops, "
             << std::setprecision(6) << out_info.route_length
@@ -26,8 +26,17 @@ void PrintRouteInfo(std::ostream& out, const Responce& responce)
     }
 }
 
-void ReadOutRequest(TransportCatalogue& transport_catalogue, const std::string_view request_words)
+void ReadOutRequest(TransportCatalogue& transport_catalogue, std::istream& is)
 {
-    Request request(request_words);
-    PrintRouteInfo(std::cout, transport_catalogue.GetRequest(request));
+    size_t num_request = 0;
+    std::string request_words;
+    std::getline(is, request_words);
+    num_request = std::stoi(request_words);
+
+    for (size_t i = 0; i < num_request; i++)
+    {
+        std::getline(is, request_words);
+        Request request(request_words);
+        PrintRouteInfo(std::cout, transport_catalogue.GetRequest(request));
+    }
 }

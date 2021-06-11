@@ -6,6 +6,17 @@ struct Coordinates
 {
     double lat = 0.0;
     double lng = 0.0;
+
+    Coordinates& operator=(const Coordinates& rhs)
+    {
+        if (this == &rhs)
+            return *this;
+
+        lat = rhs.lat;
+        lng = rhs.lng;
+
+        return *this;
+    }
 };
 
 struct CoordinatesHasher
