@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <execution>
 #include <utility>
+#include <map>
 
 //enum class RequestType;         // Типы запросов к базе данных
 //enum class ResponceType;
@@ -60,7 +61,10 @@ struct Stop
     }
 
     Stop(const Stop& other)
-        : stop_name(other.stop_name), coordinates(other.coordinates), transports(other.transports)
+        : stop_name(other.stop_name)
+        , coordinates(other.coordinates)
+        , transports(other.transports)
+        , distance_to_stops(other.distance_to_stops)
     {
     }
 
@@ -72,14 +76,16 @@ struct Stop
         stop_name = rhs.stop_name;
         coordinates = rhs.coordinates;
         transports = rhs.transports;
+        distance_to_stops = rhs.distance_to_stops;
 
         return *this;
     }
 
     
-    std::string stop_name;
-    Coordinates coordinates;
-    std::set<Transport> transports;
+    std::string                   stop_name;
+    Coordinates                   coordinates;
+    std::set<Transport>           transports;
+    std::map<std::string, size_t> distance_to_stops;
 };
 
 inline bool operator==(const Stop& lhs, const Stop& rhs)
@@ -103,27 +109,68 @@ struct Route
     std::deque<const Stop*> route_stops;
     bool circular_route = false;
 
-    double CalculateRouteLength() const
+    size_t CalculateRouteLength() const
+    {
+        if (route_stops.size() < 1)
+            return 0;
+
+        size_t route_length = 0;
+
+        for (int i = 1; i < route_stops.size(); i++)
+        {
+            const std::string& next_stop_name = route_stops.at(i)->stop_name;
+            if (route_stops.at(i - 1)->distance_to_stops.count(next_stop_name))
+            {
+                route_length += route_stops.at(i - 1)->distance_to_stops.at(next_stop_name);
+            }
+            else if (i - 1 >= 0)
+            {
+                route_length += route_stops.at(i)->distance_to_stops.at(route_stops.at(i - 1)->stop_name);
+            }
+        }
+        if (!circular_route)
+        {
+            for (int i = route_stops.size() - 1; i > 0; i--)
+            {
+                const std::string& next_stop_name = route_stops.at(i - 1)->stop_name;
+
+                if (route_stops.at(i)->distance_to_stops.count(next_stop_name))
+                {
+                    route_length += route_stops.at(i)->distance_to_stops.at(next_stop_name);
+                }
+                else if (i - 1 >= 0)
+                {
+                    route_length += route_stops.at(i - 1)->distance_to_stops.at(route_stops.at(i)->stop_name);
+                }
+            }
+        }
+
+        return route_length;
+    }
+
+    double CalculateCurvatureRoute() const
     {
         if (route_stops.size() < 1)
             return 0.0;
 
-        double      route_length = 0.0;
-        Coordinates from = route_stops.at(0)->coordinates;
+        double      route_distance = 0.0;
+        size_t      route_length   = CalculateRouteLength();
+        Coordinates from           = route_stops.at(0)->coordinates;
         Coordinates to;
 
         for (size_t i = 1; i < route_stops.size(); i++)
         {
             to = route_stops.at(i)->coordinates;
-            route_length += ComputeDistance(from, to);
+            route_distance += ComputeDistance(from, to);
             from = to;
         }
         if (!circular_route)
         {
-            route_length *= 2;
+            route_distance *= 2;
         }
 
-        return route_length;
+
+        return route_length / route_distance;
     }
 };
 
@@ -271,8 +318,40 @@ public:
             stop_->stop_name = std::string{ word };
 
             word = ReadWord(request_str, ',');
-            stop_->coordinates.lat = std::stod(std::string{ word });
-            stop_->coordinates.lng = std::stod(std::string{ request_str });
+            bool is_distance_list = request_str.find(',') != std::string_view::npos;
+            
+            if (is_distance_list)
+            {
+                stop_->coordinates.lat = std::stod(std::string{ word });
+                word = ReadWord(request_str, ',');
+                stop_->coordinates.lng = std::stod(std::string{ word });
+
+                std::vector<std::string_view> info_for_distance;
+                while (request_str.size() != 0)
+                {
+                    if (request_str.find(',') != std::string_view::npos)
+                    {
+                        word = ReadWord(request_str, ',');
+                        info_for_distance.push_back(word);
+                    }
+                    else
+                    {
+                        word = ReadWord(request_str, '\n');
+                        info_for_distance.push_back(word);
+                    }
+                }
+
+                for (std::string_view& info : info_for_distance)
+                {
+                    size_t distance = std::stoi(std::string{ ReadWord(info, 'm') });
+                    stop_->distance_to_stops[std::string{ info }] = distance;
+                }
+            }
+            else
+            {
+                stop_->coordinates.lat = std::stod(std::string{ word });
+                stop_->coordinates.lng = std::stod(std::string{ request_str });
+            }
         }
         else if (request_type == RequestType::ROUTE_INFO)
         {
@@ -312,6 +391,10 @@ public:
             out.remove_suffix(1);
             str.remove_prefix(out.size() + 3);
         }
+        else if (end_char == 'm')
+        {
+            str.remove_prefix(out.size() + 5);
+        }
         else if (need_reduction)
         {
             if (out.size() + 2 > str.size())
@@ -350,9 +433,10 @@ struct RouteInfo
 {
     Transport transport_info;
     size_t    stops_on_route = 0;
-    size_t    unique_stops = 0;
-    double    route_length = 0;
-    bool      is_exists = false;
+    size_t    unique_stops   = 0;
+    size_t    route_length   = 0;
+    double    curvature      = 0;
+    bool      is_exists      = false;
 };
 
 struct StopInfo
@@ -457,6 +541,7 @@ private:
         if (it != stops_.end())
         {
             it->coordinates = stop.coordinates;
+            it->distance_to_stops = stop.distance_to_stops;
         }
         else
             stops_.push_back(stop);
@@ -514,6 +599,7 @@ private:
             (route.circular_route) ? route.route_stops.size() : route.route_stops.size() * 2 - 1;
         out_info.unique_stops =
             std::set<const Stop*>(route.route_stops.begin(), route.route_stops.end()).size();
+        out_info.curvature = route.CalculateCurvatureRoute();
 
         return out_info;
     }

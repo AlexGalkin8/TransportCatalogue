@@ -26,8 +26,9 @@ void PrintRouteInfo(std::ostream& out, const Responce& responce)
         out << "Bus " << out_info.transport_info.number << ": "
             << out_info.stops_on_route << " stops on route, "
             << out_info.unique_stops << " unique stops, "
-            << std::setprecision(6) << out_info.route_length
-            << " route length" << std::endl;
+            << out_info.route_length << " route length, "
+            << std::setprecision(6) << out_info.curvature 
+            << " curvature" << std::endl;
     }
 }
 
