@@ -28,11 +28,28 @@
 //class      TransportCatalogue;  // Транспортный справочник
 
 
+struct Transport
+{
+    std::string number;
+};
+
+inline bool operator==(const Transport& lhs, const Transport& rhs)
+{
+    return lhs.number == rhs.number;
+}
+
+inline bool operator<(const Transport& lhs, const Transport& rhs)
+{
+    return lhs.number < rhs.number;
+}
+
+
 struct Stop
 {
     Stop()
         : stop_name("")
         , coordinates()
+        , transports()
     {
     }
 
@@ -43,7 +60,7 @@ struct Stop
     }
 
     Stop(const Stop& other)
-        : stop_name(other.stop_name), coordinates(other.coordinates)
+        : stop_name(other.stop_name), coordinates(other.coordinates), transports(other.transports)
     {
     }
 
@@ -54,12 +71,15 @@ struct Stop
 
         stop_name = rhs.stop_name;
         coordinates = rhs.coordinates;
+        transports = rhs.transports;
 
         return *this;
     }
 
+    
     std::string stop_name;
     Coordinates coordinates;
+    std::set<Transport> transports;
 };
 
 inline bool operator==(const Stop& lhs, const Stop& rhs)
@@ -108,17 +128,6 @@ struct Route
 };
 
 
-struct Transport
-{
-    std::string number;
-};
-
-inline bool operator==(const Transport& lhs, const Transport& rhs)
-{
-    return lhs.number == rhs.number;
-}
-
-
 struct TransportHasher
 {
     size_t operator()(const Transport& transport) const
@@ -136,7 +145,8 @@ enum class RequestType
     UNKNOWN = 0,
     ADD_STOP,
     ADD_ROUTE,
-    ROUTE_INFO
+    ROUTE_INFO,
+    STOP_INFO
 };
 
 class Request
@@ -226,7 +236,18 @@ public:
             }
         }
         else if (word == "Stop")
-            request_type = RequestType::ADD_STOP;
+        {
+            if (request_str.find(':') != std::string_view::npos)
+            {
+                request_type = RequestType::ADD_STOP;
+            }
+            else
+            {
+                word = ReadWord(request_str, '\n');
+                request_type = RequestType::STOP_INFO;
+            }
+
+        }
 
 
         if (request_type == RequestType::ADD_ROUTE)
@@ -256,6 +277,11 @@ public:
         else if (request_type == RequestType::ROUTE_INFO)
         {
             transport_ = new Transport{ std::string{ word } };
+        }
+        else if (request_type == RequestType::STOP_INFO)
+        {
+            stop_ = new Stop();
+            stop_->stop_name = word;
         }
     }
 
@@ -288,7 +314,10 @@ public:
         }
         else if (need_reduction)
         {
-            str.remove_prefix(out.size() + 2);
+            if (out.size() + 2 > str.size())
+                str.remove_prefix(out.size() + 1);
+            else
+                str.remove_prefix(out.size() + 2);
         }
         else
         {
@@ -302,10 +331,10 @@ private:
     RequestType request_type;
 
     // От request_type зависит какие структуры заполнены
-    bool circular_route;
+    bool              circular_route;
     std::vector<Stop> route_;
-    Transport* transport_;
-    Stop* stop_;
+    Transport*        transport_;
+    Stop*             stop_;
 };
 
 
@@ -313,21 +342,31 @@ private:
 enum class ResponceType
 {
     EMPTY = 0,
-    INFO_ROUTE,
+    ROUTE_INFO,
+    STOP_INFO
 };
 
 struct RouteInfo
 {
     Transport transport_info;
-    size_t stops_on_route = 0;
-    size_t unique_stops = 0;
-    double   route_length = 0;
+    size_t    stops_on_route = 0;
+    size_t    unique_stops = 0;
+    double    route_length = 0;
+    bool      is_exists = false;
+};
+
+struct StopInfo
+{
+    std::string_view           stop_name = "";
+    const std::set<Transport>* transports =  nullptr;
+    bool                       is_exists = false;
 };
 
 struct Responce
 {
     ResponceType responce_type = ResponceType::EMPTY;
-    RouteInfo route_info;
+    RouteInfo    route_info;
+    StopInfo     stop_info;
 };
 
 
@@ -337,6 +376,8 @@ class TransportCatalogue
 public:
     Responce GetRequest(const Request& request)
     {
+        Responce responce;
+
         if (request.GetRequestType() == RequestType::ADD_ROUTE)
         {
             AddRoute(*request.GetTransport(), request.GetRoute(), request.GetIsCircularRoute());
@@ -348,15 +389,37 @@ public:
         else if (request.GetRequestType() == RequestType::ROUTE_INFO)
         {
             auto info = GetRouteInfo(request.GetTransport()->number);
+            responce.responce_type = ResponceType::ROUTE_INFO;
 
-            if (!info.has_value())
-                return Responce{ ResponceType::EMPTY,
-                RouteInfo{ Transport{ std::string { request.GetTransport()->number } }, 0, 0, 0 } };
+            if (info.has_value())
+            {
+                responce.route_info = info.value();
+                responce.route_info.is_exists = true;
+            }
             else
-                return Responce{ ResponceType::INFO_ROUTE, info.value() };
+            {
+                responce.route_info.is_exists = false;
+                responce.route_info.transport_info.number = request.GetTransport()->number;
+            }
+        }
+        else if (request.GetRequestType() == RequestType::STOP_INFO)
+        {
+            auto info = GetStopInfo(request.GetStop()->stop_name);
+            responce.responce_type = ResponceType::STOP_INFO;
+
+            if (info.has_value())
+            {
+                responce.stop_info = info.value();
+                responce.stop_info.is_exists = true;
+            }
+            else
+            {
+                responce.stop_info.is_exists = false;
+                responce.stop_info.stop_name = request.GetStop()->stop_name;
+            }
         }
 
-        return Responce();
+        return responce;
     }
 
     std::optional<const Route*> FindRoute(const std::string_view route_name) const
@@ -371,7 +434,6 @@ public:
 
     std::optional<const Stop*> FindStop(const std::string_view stop_name) const
     {
-        //auto it = std::find(std::execution::par, stops_.begin(), stops_.end(), Stop{ static_cast<std::string>(stop_name), Coordinates() });
         auto it = std::find_if(stops_.begin(), stops_.end(), [&stop_name]
             (const Stop& stop) { return stop.stop_name == static_cast<std::string>(stop_name); });
 
@@ -393,7 +455,9 @@ private:
 
         // Если находим
         if (it != stops_.end())
-            *it = stop;
+        {
+            it->coordinates = stop.coordinates;
+        }
         else
             stops_.push_back(stop);
     }
@@ -404,19 +468,23 @@ private:
         for (const Stop& stop : stops)
         {
             // ищем остановку в базе остановок
-            auto it = FindStop(stop.stop_name);
+            auto it = std::find(stops_.begin(), stops_.end(), stop);
 
-            if (it.has_value())
+            if (it != stops_.end())
             {
                 // если находим то добавляем указатель на остановку в маршрут
-                route.route_stops.push_back(it.value());
+                route.route_stops.push_back(&(*it));
+                // Добавляем транспорт в список транспортов, проходящих через остановку
+                it->transports.insert(transport);
             }
             else
             {
                 // если не находим, то добавляем остановку в базу
                 stops_.push_back(stop);
+                stops_.at(stops_.size() - 1).transports.insert(transport);
                 route.route_stops.push_back(&stops_.at(stops_.size() - 1));
             }
+
         }
 
         // круговой маршрут или нет
@@ -426,7 +494,7 @@ private:
         routes_[transport] = route;
     }
 
-    std::optional<RouteInfo> GetRouteInfo(const std::string_view route_name)
+    std::optional<RouteInfo> GetRouteInfo(const std::string_view route_name) const
     {
         const auto answer = FindRoute(route_name);
         if (!answer.has_value())
@@ -434,6 +502,11 @@ private:
 
         const Route& route = *answer.value();
         RouteInfo out_info;
+
+        if (route.route_stops.size() == 0)
+        {
+            return out_info;
+        }
 
         out_info.transport_info = Transport{ std::string { route_name } };
         out_info.route_length = route.CalculateRouteLength();
@@ -444,7 +517,19 @@ private:
 
         return out_info;
     }
+
+    std::optional<StopInfo> GetStopInfo(const std::string_view stop_name) const
+    {
+        const auto answer = FindStop(stop_name);
+        if (!answer.has_value())
+            return std::nullopt;
+
+        const Stop& stop = *answer.value();
+        StopInfo out_info;
+
+        out_info.stop_name = stop_name;
+        out_info.transports = &stop.transports;
+
+        return out_info;
+    }
 };
-
-
-
