@@ -6,6 +6,9 @@
 #include <vector>
 #include <sstream>
 
+using namespace transport_catalogue;
+using namespace transport_catalogue::input;
+using namespace transport_catalogue::output;
 
 void test1();
 void test2();

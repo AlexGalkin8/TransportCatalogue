@@ -32,158 +32,159 @@
 //class      TransportCatalogue;  // Транспортный справочник
 
 
-
-struct Transport
+namespace transport_catalogue
 {
-    std::string number;
-};
 
-inline bool operator==(const Transport& lhs, const Transport& rhs);
+    struct Transport
+    {
+        std::string number;
+    };
 
-inline bool operator<(const Transport& lhs, const Transport& rhs);
+    inline bool operator==(const Transport& lhs, const Transport& rhs);
 
-
-struct TransportHasher
-{
-    std::hash<std::string> hasher;
-
-    size_t operator()(const Transport& transport) const;
-};
+    inline bool operator<(const Transport& lhs, const Transport& rhs);
 
 
-struct Stop
-{
-    std::string                   stop_name;
-    Coordinates                   coordinates;
-    std::set<Transport>           transports;
-    std::map<std::string, size_t> distance_to_stops;
+    struct TransportHasher
+    {
+        std::hash<std::string> hasher;
 
-    Stop();
-
-    Stop(const std::string& stop_name, const Coordinates& coordinates);
-
-    Stop(const Stop& other);
-
-    Stop& operator=(const Stop& rhs);
-};
-
-inline bool operator==(const Stop& lhs, const Stop& rhs);
-
-//struct StopHasher
-//{
-//    size_t operator()(const Stop& stop) const;
-//};
+        size_t operator()(const Transport& transport) const;
+    };
 
 
-struct Route
-{
-    std::deque<const Stop*> route_stops;
-    bool                    circular_route = false;
+    struct Stop
+    {
+        std::string                   stop_name;
+        coordinate_tools::Coordinates coordinates;
+        std::set<Transport>           transports;
+        std::map<std::string, size_t> distance_to_stops;
 
-    size_t CalculateRouteLength() const;
+        Stop();
 
-    double CalculateCurvatureRoute() const;
-};
+        explicit Stop(const Stop& other);
 
+        Stop& operator=(const Stop& rhs);
+    };
 
-enum class RequestType
-{
-    UNKNOWN = 0,
-    ADD_STOP,
-    ADD_ROUTE,
-    ROUTE_INFO,
-    STOP_INFO
-};
+    inline bool operator==(const Stop& lhs, const Stop& rhs);
 
-class Request
-{
-public:
-    Request();
-
-    Request(std::string_view request_str);
-
-    ~Request();
-
-    void Clear();
-
-    const RequestType& GetRequestType() const;
-
-    bool GetIsCircularRoute() const;
-
-    const std::vector<Stop>& GetRoute() const;
-
-    const Transport* GetTransport() const;
-
-    const Stop* GetStop() const;
-
-    void ParseRequest(std::string_view request_str);
-
-    static std::string_view ReadWord(std::string_view& str, const char end_char = ' ');
-
-private:
-    RequestType request_type;
-
-    // От request_type зависит какие структуры заполнены
-    bool              circular_route;
-    std::vector<Stop> route_;
-    Transport*        transport_;
-    Stop*             stop_;
-};
+    //struct StopHasher
+    //{
+    //    size_t operator()(const Stop& stop) const;
+    //};
 
 
+    struct Route
+    {
+        std::deque<const Stop*> route_stops;
+        bool                    circular_route = false;
 
-enum class ResponceType
-{
-    EMPTY = 0,
-    ROUTE_INFO,
-    STOP_INFO
-};
+        size_t CalculateRouteLength() const;
 
-struct RouteInfo
-{
-    Transport transport_info;
-    size_t    stops_on_route = 0;
-    size_t    unique_stops   = 0;
-    size_t    route_length   = 0;
-    double    curvature      = 0;
-    bool      is_exists      = false;
-};
+        double CalculateCurvatureRoute() const;
+    };
 
-struct StopInfo
-{
-    std::string_view           stop_name  = "";
-    const std::set<Transport>* transports =  nullptr;
-    bool                       is_exists  = false;
-};
 
-struct Responce
-{
-    ResponceType responce_type = ResponceType::EMPTY;
-    RouteInfo    route_info;
-    StopInfo     stop_info;
-};
+    enum class RequestType
+    {
+        UNKNOWN = 0,
+        ADD_STOP,
+        ADD_ROUTE,
+        ROUTE_INFO,
+        STOP_INFO
+    };
+
+    class Request
+    {
+    public:
+        Request();
+
+        Request(std::string_view request_str);
+
+        ~Request();
+
+        void Clear();
+
+        const RequestType& GetRequestType() const;
+
+        bool GetIsCircularRoute() const;
+
+        const std::vector<Stop>& GetRoute() const;
+
+        const Transport* GetTransport() const;
+
+        const Stop* GetStop() const;
+
+        void ParseRequest(std::string_view request_str);
+
+        static std::string_view ReadWord(std::string_view& str, const char end_char = ' ');
+
+    private:
+        RequestType request_type;
+
+        // От request_type зависит какие структуры заполнены
+        bool              circular_route;
+        std::vector<Stop> route_;
+        Transport* transport_;
+        Stop* stop_;
+    };
 
 
 
-class TransportCatalogue
-{
-public:
-    Responce GetRequest(const Request& request);
+    enum class ResponceType
+    {
+        EMPTY = 0,
+        ROUTE_INFO,
+        STOP_INFO
+    };
 
-    std::optional<const Route*> FindRoute(const std::string_view route_name) const;
+    struct RouteInfo
+    {
+        Transport transport_info;
+        size_t    stops_on_route = 0;
+        size_t    unique_stops = 0;
+        size_t    route_length = 0;
+        double    curvature = 0;
+        bool      is_exists = false;
+    };
 
-    std::optional<const Stop*> FindStop(const std::string_view stop_name) const;
+    struct StopInfo
+    {
+        std::string_view           stop_name = "";
+        const std::set<Transport>* transports = nullptr;
+        bool                       is_exists = false;
+    };
 
-private:
-    std::unordered_map<Transport, Route, TransportHasher> routes_;
-    std::deque<Stop> stops_;
+    struct Responce
+    {
+        ResponceType responce_type = ResponceType::EMPTY;
+        RouteInfo    route_info;
+        StopInfo     stop_info;
+    };
 
 
-    void AddStop(const Stop& stop);
 
-    void AddRoute(const Transport& transport, const std::vector<Stop>& stops, bool circular_route = false);
+    class TransportCatalogue
+    {
+    public:
+        Responce GetRequest(const Request& request);
 
-    std::optional<RouteInfo> GetRouteInfo(const std::string_view route_name) const;
+        std::optional<const Route*> FindRoute(const std::string_view route_name) const;
 
-    std::optional<StopInfo> GetStopInfo(const std::string_view stop_name) const;
-};
+        std::optional<const Stop*> FindStop(const std::string_view stop_name) const;
+
+    private:
+        std::unordered_map<Transport, Route, TransportHasher> routes_;
+        std::deque<Stop> stops_;
+
+
+        void AddStop(const Stop& stop);
+
+        void AddRoute(const Transport& transport, const std::vector<Stop>& stops, bool circular_route = false);
+
+        std::optional<RouteInfo> GetRouteInfo(const std::string_view route_name) const;
+
+        std::optional<StopInfo> GetStopInfo(const std::string_view stop_name) const;
+    };
+}
