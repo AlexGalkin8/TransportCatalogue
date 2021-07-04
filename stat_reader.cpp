@@ -5,23 +5,16 @@ namespace transport_catalogue
 {
     namespace output
     {
-        void PrintRouteInfo(std::ostream& out, const Responce& responce)
+        void PrintBusInfo(std::ostream& out, const BusInfo& out_info)
         {
-            const RouteInfo& out_info = responce.route_info;
-
-            if (!out_info.is_exists)
+            if (out_info.stops_on_route == 0)
             {
-                out << "Bus " << responce.route_info.transport_info.number << ": "
-                    << "not found" << std::endl;
-            }
-            else if (out_info.stops_on_route == 0)
-            {
-                out << "Bus " << responce.route_info.transport_info.number << ": "
+                out << "Bus " << out_info.bus_number << ": "
                     << "no stops" << std::endl;
             }
             else
             {
-                out << "Bus " << out_info.transport_info.number << ": "
+                out << "Bus " << out_info.bus_number << ": "
                     << out_info.stops_on_route << " stops on route, "
                     << out_info.unique_stops << " unique stops, "
                     << out_info.route_length << " route length, "
@@ -30,16 +23,10 @@ namespace transport_catalogue
             }
         }
 
-        void PrintStopInfo(std::ostream& out, const Responce& responce)
+        void PrintStopInfo(std::ostream& out, const StopInfo& out_info)
         {
-            const StopInfo& out_info = responce.stop_info;
 
-            if (!out_info.is_exists)
-            {
-                out << "Stop " << out_info.stop_name << ": "
-                    << "not found" << std::endl;
-            }
-            else if (out_info.transports == nullptr || out_info.transports->size() == 0)
+            if (out_info.bus_numbers.empty())
             {
                 out << "Stop " << out_info.stop_name << ": "
                     << "no buses" << std::endl;
@@ -47,8 +34,8 @@ namespace transport_catalogue
             else
             {
                 out << "Stop " << out_info.stop_name << ": buses";
-                for (const auto transport : *out_info.transports)
-                    out << " " << transport.number;
+                for (const auto bus : out_info.bus_numbers)
+                    out << " " << bus;
                 out << std::endl;
             }
         }
@@ -65,14 +52,13 @@ namespace transport_catalogue
                 std::getline(is, request_words);
                 Request request(request_words);
                 Responce responce = transport_catalogue.GetRequest(request);
-                if (responce.responce_type == ResponceType::ROUTE_INFO)
-                {
-                    PrintRouteInfo(std::cout, responce);
-                }
-                else if (responce.responce_type == ResponceType::STOP_INFO)
-                {
-                    PrintStopInfo(std::cout, responce);
-                }
+
+                if (std::holds_alternative<BusInfo>(responce))
+                    PrintBusInfo(std::cout, std::get<BusInfo>(responce));
+                else if (std::holds_alternative<StopInfo>(responce))
+                    PrintStopInfo(std::cout, std::get<StopInfo>(responce));
+                else
+                    std::cout << std::get<std::string>(responce) << std::endl;
             }
         }
 
@@ -83,14 +69,13 @@ namespace transport_catalogue
             {
                 Request request(request_words);
                 Responce responce = transport_catalogue.GetRequest(request);
-                if (responce.responce_type == ResponceType::ROUTE_INFO)
-                {
-                    PrintRouteInfo(std::cout, responce);
-                }
-                else if (responce.responce_type == ResponceType::STOP_INFO)
-                {
-                    PrintStopInfo(std::cout, responce);
-                }
+
+                if (std::holds_alternative<BusInfo>(responce))
+                    PrintBusInfo(std::cout, std::get<BusInfo>(responce));
+                else if (std::holds_alternative<StopInfo>(responce))
+                    PrintStopInfo(std::cout, std::get<StopInfo>(responce));
+                else
+                    std::cout << std::get<std::string>(responce) << std::endl;
             }
         }
     }

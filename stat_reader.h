@@ -8,9 +8,9 @@ namespace transport_catalogue
 {
     namespace output
     {
-        void PrintRouteInfo(std::ostream& out, const Responce& responce);
+        void PrintBusInfo(std::ostream& out, const BusInfo& out_info);
 
-        void PrintStopInfo(std::ostream& out, const Responce& responce);
+        void PrintStopInfo(std::ostream& out, const StopInfo& out_info);
 
 
         void ReadOutRequest(TransportCatalogue& transport_catalogue, std::istream& is);

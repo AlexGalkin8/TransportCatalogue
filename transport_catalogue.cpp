@@ -10,28 +10,32 @@ using namespace transport_catalogue::coordinate_tools;
 
 namespace transport_catalogue
 {
-    inline bool operator==(const Transport& lhs, const Transport& rhs)
+    /************************************************
+    ********************   Bus   ********************
+    *************************************************/
+
+    inline bool operator==(const Bus& lhs, const Bus& rhs)
     {
         return lhs.number == rhs.number;
     }
 
 
-    inline bool operator<(const Transport& lhs, const Transport& rhs)
+    inline bool operator<(const Bus& lhs, const Bus& rhs)
     {
         return lhs.number < rhs.number;
     }
 
 
-    size_t TransportHasher::operator()(const Transport& transport) const
-    {
-        return hasher(transport.number);
-    }
 
+
+    /*************************************************
+    ********************   Stop   ********************
+    **************************************************/
 
     Stop::Stop()
         : stop_name("")
         , coordinates()
-        , transports()
+        , distance_to_stops()
     {
     }
 
@@ -39,7 +43,6 @@ namespace transport_catalogue
     Stop::Stop(const Stop& other)
         : stop_name(other.stop_name)
         , coordinates(other.coordinates)
-        , transports(other.transports)
         , distance_to_stops(other.distance_to_stops)
     {
     }
@@ -52,7 +55,6 @@ namespace transport_catalogue
 
         stop_name = rhs.stop_name;
         coordinates = rhs.coordinates;
-        transports = rhs.transports;
         distance_to_stops = rhs.distance_to_stops;
 
         return *this;
@@ -65,13 +67,11 @@ namespace transport_catalogue
     }
 
 
-    //size_t StopHasher::operator()(const Stop& stop) const
-    //{
-    //    CoordinatesHasher coordinates_hasher;
-    //    return std::hash<std::string>{}(stop.stop_name) +
-    //           std::hash<size_t>{}(coordinates_hasher(stop.coordinates));
-    //}
 
+
+    /**************************************************
+    ********************   Route   ********************
+    ***************************************************/
 
     size_t Route::CalculateRouteLength() const
     {
@@ -80,9 +80,11 @@ namespace transport_catalogue
 
         size_t route_length = 0;
 
+
         for (int32_t i = 1; i < route_stops.size(); i++)
         {
             const std::string& next_stop_name = route_stops.at(i)->stop_name;
+
             if (route_stops.at(i - 1)->distance_to_stops.count(next_stop_name))
             {
                 route_length += route_stops.at(i - 1)->distance_to_stops.at(next_stop_name);
@@ -92,6 +94,7 @@ namespace transport_catalogue
                 route_length += route_stops.at(i)->distance_to_stops.at(route_stops.at(i - 1)->stop_name);
             }
         }
+
         if (!circular_route)
         {
             for (int32_t i = static_cast<int>(route_stops.size()) - 1; i > 0; i--)
@@ -138,21 +141,27 @@ namespace transport_catalogue
         return route_length / route_distance;
     }
 
+    
+
+
+    /****************************************************
+    ********************   Request   ********************
+    *****************************************************/
 
     Request::Request()
-        : request_type(RequestType::UNKNOWN)
+        : request_type_(RequestType::UNKNOWN)
         , circular_route(false)
         , route_()
-        , transport_(nullptr)
+        , bus_(nullptr)
         , stop_(nullptr)
     {
     }
 
 
     Request::Request(std::string_view request_str)
-        : request_type(RequestType::UNKNOWN)
+        : request_type_(RequestType::UNKNOWN)
         , route_()
-        , transport_(nullptr)
+        , bus_(nullptr)
         , stop_(nullptr)
     {
         ParseRequest(request_str);
@@ -169,8 +178,8 @@ namespace transport_catalogue
     {
         if (stop_ != nullptr)
             delete stop_;
-        else if (transport_ != nullptr)
-            delete transport_;
+        else if (bus_ != nullptr)
+            delete bus_;
         else if (stop_ != nullptr)
             route_.clear();
         else
@@ -181,7 +190,7 @@ namespace transport_catalogue
 
     const RequestType& Request::GetRequestType() const
     {
-        return request_type;
+        return request_type_;
     }
 
 
@@ -197,9 +206,9 @@ namespace transport_catalogue
     }
 
 
-    const Transport* Request::GetTransport() const
+    const Bus* Request::GetBus() const
     {
-        return transport_;
+        return bus_;
     }
 
 
@@ -209,107 +218,34 @@ namespace transport_catalogue
     }
 
 
+
     void Request::ParseRequest(std::string_view request_str)
     {
         if (request_str.empty())
             throw std::invalid_argument("ParseRequests: Empty request!");
 
-        std::string_view word = ReadWord(request_str);
-
         // Определяем какой тип запроса
-        if (word == "Bus")
+        request_type_ = ParseRequestType(request_str);
+
+        // Парсим запрос, в зависимости от его типа
+        if (request_type_ == RequestType::ADD_ROUTE)
         {
-            // Проверяем последний символ - есть ':' или нет
-            if (request_str.find(':') != std::string_view::npos)
-            {
-                word = ReadWord(request_str, ':');
-                request_type = RequestType::ADD_ROUTE;
-            }
-            else
-            {
-                word = ReadWord(request_str, '\n');
-                request_type = RequestType::ROUTE_INFO;
-            }
+            ParseAddRouteRequest(request_str);
         }
-        else if (word == "Stop")
+        else if (request_type_ == RequestType::ADD_STOP)
         {
-            if (request_str.find(':') != std::string_view::npos)
-            {
-                request_type = RequestType::ADD_STOP;
-            }
-            else
-            {
-                word = ReadWord(request_str, '\n');
-                request_type = RequestType::STOP_INFO;
-            }
-
+            ParseAddStopRequest(request_str);
         }
-
-
-        if (request_type == RequestType::ADD_ROUTE)
+        else if (request_type_ == RequestType::ROUTE_INFO)
         {
-            transport_ = new Transport{ std::string{ word } };
-            circular_route = request_str.find('>') != std::string_view::npos;
-            char delimiter = (circular_route) ? '>' : '-';
-
-            while (request_str.size() != 0)
-            {
-                Stop stop;
-                word = ReadWord(request_str, delimiter);
-                stop.stop_name = std::string{ word };
-                route_.push_back(stop);
-            }
+            request_str.remove_prefix(4);
+            bus_ = new Bus{ std::string{ ReadWord(request_str, '\n') } };
         }
-        else if (request_type == RequestType::ADD_STOP)
+        else if (request_type_ == RequestType::STOP_INFO)
         {
             stop_ = new Stop();
-            word = ReadWord(request_str, ':');
-            stop_->stop_name = std::string{ word };
-
-            word = ReadWord(request_str, ',');
-            bool is_distance_list = request_str.find(',') != std::string_view::npos;
-
-            if (is_distance_list)
-            {
-                stop_->coordinates.lat = std::stod(std::string{ word });
-                word = ReadWord(request_str, ',');
-                stop_->coordinates.lng = std::stod(std::string{ word });
-
-                std::vector<std::string_view> info_for_distance;
-                while (request_str.size() != 0)
-                {
-                    if (request_str.find(',') != std::string_view::npos)
-                    {
-                        word = ReadWord(request_str, ',');
-                        info_for_distance.push_back(word);
-                    }
-                    else
-                    {
-                        word = ReadWord(request_str, '\n');
-                        info_for_distance.push_back(word);
-                    }
-                }
-
-                for (std::string_view& info : info_for_distance)
-                {
-                    size_t distance = std::stoi(std::string{ ReadWord(info, 'm') });
-                    stop_->distance_to_stops[std::string{ info }] = distance;
-                }
-            }
-            else
-            {
-                stop_->coordinates.lat = std::stod(std::string{ word });
-                stop_->coordinates.lng = std::stod(std::string{ request_str });
-            }
-        }
-        else if (request_type == RequestType::ROUTE_INFO)
-        {
-            transport_ = new Transport{ std::string{ word } };
-        }
-        else if (request_type == RequestType::STOP_INFO)
-        {
-            stop_ = new Stop();
-            stop_->stop_name = word;
+            request_str.remove_prefix(5);
+            stop_->stop_name = ReadWord(request_str, '\n');
         }
     }
 
@@ -361,13 +297,125 @@ namespace transport_catalogue
     }
 
 
+    RequestType Request::ParseRequestType(std::string_view request_str) const
+    {
+        RequestType request_type = RequestType::UNKNOWN;
+
+        std::string_view word = ReadWord(request_str);
+
+        if (word == "Bus")
+        {
+            // Проверяем последний символ - есть ':' или нет
+            if (request_str.find(':') != std::string_view::npos)
+            {
+                word = ReadWord(request_str, ':');
+                request_type = RequestType::ADD_ROUTE;
+            }
+            else
+            {
+                word = ReadWord(request_str, '\n');
+                request_type = RequestType::ROUTE_INFO;
+            }
+        }
+        else if (word == "Stop")
+        {
+            if (request_str.find(':') != std::string_view::npos)
+            {
+                request_type = RequestType::ADD_STOP;
+            }
+            else
+            {
+                word = ReadWord(request_str, '\n');
+                request_type = RequestType::STOP_INFO;
+            }
+        }
+
+        return request_type;
+    }
+
+
+    void Request::ParseAddRouteRequest(std::string_view request_str)
+    {
+        request_str.remove_prefix(4); // Пропускаем символы "Bus " в запросе
+
+        // Читаем номер автобуса
+        std::string_view word = ReadWord(request_str, ':');
+        bus_ = new Bus{ std::string{ word } };
+
+        circular_route = request_str.find('>') != std::string_view::npos;
+        char delimiter = (circular_route) ? '>' : '-';
+
+        while (request_str.size() != 0)
+        {
+            Stop stop;
+            word = ReadWord(request_str, delimiter);
+            stop.stop_name = std::string{ word };
+            route_.push_back(stop);
+        }
+    }
+
+
+    void Request::ParseAddStopRequest(std::string_view request_str)
+    {
+        request_str.remove_prefix(5); // Пропускаем символы "Stop " в запросе
+
+        stop_ = new Stop();
+
+        // Читаем и записываем название остановки
+        std::string_view word = ReadWord(request_str, ':');
+        stop_->stop_name = std::string{ word };
+
+        word = ReadWord(request_str, ',');
+        bool is_distance_list = request_str.find(',') != std::string_view::npos;
+
+        if (is_distance_list)
+        {
+            stop_->coordinates.lat = std::stod(std::string{ word });
+            word = ReadWord(request_str, ',');
+            stop_->coordinates.lng = std::stod(std::string{ word });
+
+            std::vector<std::string_view> info_for_distance;
+            while (request_str.size() != 0)
+            {
+                if (request_str.find(',') != std::string_view::npos)
+                {
+                    word = ReadWord(request_str, ',');
+                    info_for_distance.push_back(word);
+                }
+                else
+                {
+                    word = ReadWord(request_str, '\n');
+                    info_for_distance.push_back(word);
+                }
+            }
+
+            for (std::string_view& info : info_for_distance)
+            {
+                size_t distance = std::stoi(std::string{ ReadWord(info, 'm') });
+                stop_->distance_to_stops[std::string{ info }] = distance;
+            }
+        }
+        else
+        {
+            stop_->coordinates.lat = std::stod(std::string{ word });
+            stop_->coordinates.lng = std::stod(std::string{ request_str });
+        }
+    }
+
+
+
+
+    /***************************************************************
+    ********************   TransportCatalogue   ********************
+    ****************************************************************/
+
     Responce TransportCatalogue::GetRequest(const Request& request)
     {
-        Responce responce;
+        Responce responce = nullptr;
 
         if (request.GetRequestType() == RequestType::ADD_ROUTE)
         {
-            AddRoute(*request.GetTransport(), request.GetRoute(), request.GetIsCircularRoute());
+            AddBus(*request.GetBus(), request.GetRoute(), request.GetIsCircularRoute());
         }
         else if (request.GetRequestType() == RequestType::ADD_STOP)
         {
@@ -375,150 +423,140 @@ namespace transport_catalogue
         }
         else if (request.GetRequestType() == RequestType::ROUTE_INFO)
         {
-            auto info = GetRouteInfo(request.GetTransport()->number);
-            responce.responce_type = ResponceType::ROUTE_INFO;
+            auto info = GetBusInfo(request.GetBus()->number);
 
             if (info.has_value())
-            {
-                responce.route_info = info.value();
-                responce.route_info.is_exists = true;
-            }
+                responce = info.value();
             else
-            {
-                responce.route_info.is_exists = false;
-                responce.route_info.transport_info.number = request.GetTransport()->number;
-            }
+                responce = std::string("Bus " + request.GetBus()->number + ": not found");
         }
         else if (request.GetRequestType() == RequestType::STOP_INFO)
         {
             auto info = GetStopInfo(request.GetStop()->stop_name);
-            responce.responce_type = ResponceType::STOP_INFO;
 
             if (info.has_value())
-            {
-                responce.stop_info = info.value();
-                responce.stop_info.is_exists = true;
-            }
+                responce = info.value();
             else
-            {
-                responce.stop_info.is_exists = false;
-                responce.stop_info.stop_name = request.GetStop()->stop_name;
-            }
+                responce = std::string("Stop " + request.GetStop()->stop_name  + ": not found");
         }
 
         return responce;
     }
 
 
-    std::optional<const Route*> TransportCatalogue::FindRoute(const std::string_view route_name) const
+    std::shared_ptr<Bus> TransportCatalogue::FindBus(const std::string& bus_name) const
     {
-        auto it = routes_.find(Transport{ std::string{ route_name } });
-        //auto it = std::find(std::execution::par, routes_.begin(), routes_.end(), Transport{ static_cast<std::string>(route_name ) });
-        if (it == routes_.end())
-            return std::nullopt;
+        if (buses_.count(bus_name))
+            return buses_.at(bus_name);
         else
-            return &it->second;
+            return nullptr;
     }
 
 
-    std::optional<const Stop*> TransportCatalogue::FindStop(const std::string_view stop_name) const
+    std::shared_ptr<Stop> TransportCatalogue::FindStop(const std::string& stop_name) const
     {
-        auto it = std::find_if(stops_.begin(), stops_.end(), [&stop_name]
-        (const Stop& stop) { return stop.stop_name == static_cast<std::string>(stop_name); });
-
-        if (it == stops_.end())
-            return std::nullopt;
+        if (stops_.count(stop_name))
+            return stops_.at(stop_name);
         else
-            return &(*it); // В optional нельзя передавать ссылку, поэтому пользуемся указателями
+            return nullptr;
     }
 
 
     void TransportCatalogue::AddStop(const Stop& stop)
     {
-        // ищем в данные об остановках переданную остановку
-        auto it = std::find(stops_.begin(), stops_.end(), stop);
-
         // Если находим
-        if (it != stops_.end())
+        if (stops_.count(stop.stop_name))
         {
-            it->coordinates = stop.coordinates;
-            it->distance_to_stops = stop.distance_to_stops;
+            stops_.at(stop.stop_name)->coordinates = stop.coordinates;
+            stops_.at(stop.stop_name)->distance_to_stops = stop.distance_to_stops;
         }
         else
-            stops_.push_back(stop);
+        {
+            stops_.emplace(stop.stop_name, std::make_shared<Stop>(stop));
+        }
     }
 
 
-    void TransportCatalogue::AddRoute(const Transport& transport, const std::vector<Stop>& stops, bool circular_route)
+    void TransportCatalogue::AddBus(const Bus& bus, const std::vector<Stop>& stops, bool circular_route)
     {
         Route route;
+
+        // заполняем остановки маршрута
         for (const Stop& stop : stops)
         {
-            // ищем остановку в базе остановок
-            auto it = std::find(stops_.begin(), stops_.end(), stop);
-
-            if (it != stops_.end())
+            if (stops_.count(stop.stop_name))
             {
                 // если находим то добавляем указатель на остановку в маршрут
-                route.route_stops.push_back(&(*it));
-                // Добавляем транспорт в список транспортов, проходящих через остановку
-                it->transports.insert(transport);
+                route.route_stops.push_back(stops_.at(stop.stop_name));
             }
             else
             {
                 // если не находим, то добавляем остановку в базу
-                stops_.push_back(stop);
-                stops_.at(stops_.size() - 1).transports.insert(transport);
-                route.route_stops.push_back(&stops_.at(stops_.size() - 1));
+                stops_.emplace(stop.stop_name, std::make_shared<Stop>(stop));
+                route.route_stops.push_back(stops_.at(stop.stop_name));
             }
-
         }
 
         // круговой маршрут или нет
         route.circular_route = circular_route;
 
-        // добавляем новый маршрут или меняем старый
-        routes_[transport] = route;
+        // добавляем маршрут в каталог
+        Bus tmp_bus{ bus.number, std::make_shared<Route>(std::move(route)) };
+        buses_[tmp_bus.number] = std::make_shared<Bus>(tmp_bus);
     }
 
 
-    std::optional<RouteInfo> TransportCatalogue::GetRouteInfo(const std::string_view route_name) const
+    std::optional<BusInfo> TransportCatalogue::GetBusInfo(const std::string& bus_name) const
     {
-        const auto answer = FindRoute(route_name);
-        if (!answer.has_value())
+        const std::shared_ptr<Bus> answer(FindBus(bus_name));
+        if (answer == nullptr)
             return std::nullopt;
 
-        const Route& route = *answer.value();
-        RouteInfo out_info;
+        const Route& route = *answer.get()->bus_route;
+        BusInfo out_info;
 
         if (route.route_stops.size() == 0)
-        {
             return out_info;
-        }
 
-        out_info.transport_info = Transport{ std::string { route_name } };
+        out_info.bus_number = buses_.at(bus_name)->number;
+
         out_info.route_length = route.CalculateRouteLength();
+
         out_info.stops_on_route =
             (route.circular_route) ? route.route_stops.size() : route.route_stops.size() * 2 - 1;
+
         out_info.unique_stops =
-            std::set<const Stop*>(route.route_stops.begin(), route.route_stops.end()).size();
+            std::set(route.route_stops.begin(), route.route_stops.end()).size();
+
         out_info.curvature = route.CalculateCurvatureRoute();
 
         return out_info;
     }
 
 
-    std::optional<StopInfo> TransportCatalogue::GetStopInfo(const std::string_view stop_name) const
+    std::optional<StopInfo> TransportCatalogue::GetStopInfo(const std::string& stop_name) const
     {
         const auto answer = FindStop(stop_name);
-        if (!answer.has_value())
+        if (answer == nullptr)
             return std::nullopt;
 
-        const Stop& stop = *answer.value();
+        const Stop& stop = *answer.get();
         StopInfo out_info;
 
         out_info.stop_name = stop_name;
-        out_info.transports = &stop.transports;
+
+        // Названия должны быть отсортированы в алфавитном порядке
+        for (const auto[_, bus] : buses_)
+        {
+            const auto it = std::find_if(bus->bus_route->route_stops.begin(),
+                bus->bus_route->route_stops.end(),
+                [&stop_name](const std::shared_ptr<Stop>& stop_ptr)
+                { return stop_ptr.get()->stop_name == stop_name; });
+
+            if (it != bus->bus_route->route_stops.end())
+                out_info.bus_numbers.insert(bus->number);
+
+        }
 
         return out_info;
     }
