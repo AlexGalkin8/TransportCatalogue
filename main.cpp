@@ -1,29 +1,32 @@
 #include "transport_catalogue.h"
-#include "input_reader.h"
-#include "stat_reader.h"
 
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <fstream>
+#include <clocale>
 
 using namespace transport_catalogue;
-using namespace transport_catalogue::input;
-using namespace transport_catalogue::output;
 
 void test1();
 void test2();
 void test3();
 void test4();
+void test5();
+void test6();
+void test7();
 
 int main()
 {
-    //TransportCatalogue transport_catalogue;
-    //ReadInputRequest(transport_catalogue, std::cin);
-    //ReadOutRequest(transport_catalogue, std::cin);
+    //TransportCatalogue transport_catalogue(RequestFormat::JSON);
+    //transport_catalogue.AddRequest(std::cin);
     //test1();
     //test2();
     //test3();
-    test4();
+    //test4();
+    test5();
+    //test6();
+    //test7();
 }
 
 void test1()
@@ -43,34 +46,21 @@ void test1()
         "Stop Universam: 55.587655, 37.645687",
         "Stop Biryulyovo Tovarnaya: 55.592028, 37.653656",
         "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164",
-    };
-
-    std::vector<std::string>  requests_for_output =
-    {
         "Bus 256",
         "Bus 750",
         "Bus 751"
     };
 
     num_command = requests_for_input.size();
-    //std::cin >> num_command;
-    std::stringstream is_input;
+    std::stringstream is_input("");
+    is_input << num_command << std::endl;
+
     for (size_t i = 0; i < num_command; i++)
     {
         is_input << requests_for_input.at(i) << std::endl;
     }
 
-    ReadInputRequest(transport_catalogue, is_input);
-
-    num_command = requests_for_output.size();
-    //std::cin >> num_command;
-    std::stringstream is_out;
-    for (size_t i = 0; i < num_command; i++)
-    {
-        is_out << requests_for_output.at(i) << std::endl;
-    }
-
-    ReadOutRequest(transport_catalogue, is_out);
+    transport_catalogue.AddRequest(is_input);
 }
 
 void test2()
@@ -80,19 +70,15 @@ void test2()
     size_t num_command = 0;
     std::vector<std::string> requests_for_input =
     {
-        "Stop A: 55.611087, 37.208230",
+        "Stop A: 55, 37",
         "Bus 0 Aa AA: A - B",
         "Bus 1:",
         "Bus 2: B - A - B - A",
         "Bus 3: A > A > A > A",
         "Bus 4: A - A - A - A",
-        "Stop B: 55.595884, 37.209155",
+        "Stop B: -55, -37",
         "Bus 5: A > B > B > A",
-        "Bus 6: A - B - B - A"
-    };
-
-    std::vector<std::string>  requests_for_output =
-    {
+        "Bus 6: A - B - B - A",
         "Bus 0 Aa AA",
         "Bus 1",
         "Bus 2",
@@ -106,24 +92,15 @@ void test2()
     };
 
     num_command = requests_for_input.size();
-    //std::cin >> num_command;
-    std::stringstream is_input;
+    std::stringstream is_input("");
+    is_input << num_command << std::endl;
+
     for (size_t i = 0; i < num_command; i++)
     {
         is_input << requests_for_input.at(i) << std::endl;
     }
 
-    ReadInputRequest(transport_catalogue, is_input);
-
-    num_command = requests_for_output.size();
-    //std::cin >> num_command;
-    std::stringstream is_out;
-    for (size_t i = 0; i < num_command; i++)
-    {
-        is_out << requests_for_output.at(i) << std::endl;
-    }
-
-    ReadOutRequest(transport_catalogue, is_out);
+    transport_catalogue.AddRequest(is_input);
 }
 
 void test3()
@@ -145,11 +122,7 @@ void test3()
         "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164",
         "Bus 828: Biryulyovo Zapadnoye > Universam > Rossoshanskaya ulitsa > Biryulyovo Zapadnoye",
         "Stop Rossoshanskaya ulitsa: 55.595579, 37.605757",
-        "Stop Prazhskaya: 55.611678, 37.603831"
-    };
-
-    std::vector<std::string>  requests_for_output =
-    {
+        "Stop Prazhskaya: 55.611678, 37.603831",
         "Bus 256",
         "Bus 750",
         "Bus 751",
@@ -159,24 +132,15 @@ void test3()
     };
 
     num_command = requests_for_input.size();
-    //std::cin >> num_command;
-    std::stringstream is_input;
+    std::stringstream is_input("");
+    is_input << num_command << std::endl;
+
     for (size_t i = 0; i < num_command; i++)
     {
         is_input << requests_for_input.at(i) << std::endl;
     }
 
-    ReadInputRequest(transport_catalogue, is_input);
-
-    num_command = requests_for_output.size();
-    //std::cin >> num_command;
-    std::stringstream is_out;
-    for (size_t i = 0; i < num_command; i++)
-    {
-        is_out << requests_for_output.at(i) << std::endl;
-    }
-
-    ReadOutRequest(transport_catalogue, is_out);
+    transport_catalogue.AddRequest(is_input);
 }
 
 void test4()
@@ -198,11 +162,7 @@ void test4()
         "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164, 1200m to Biryulyovo Zapadnoye",
         "Bus 828: Biryulyovo Zapadnoye > Universam > Rossoshanskaya ulitsa > Biryulyovo Zapadnoye",
         "Stop Rossoshanskaya ulitsa: 55.595579, 37.605757",
-        "Stop Prazhskaya: 55.611678, 37.603831"
-    };
-
-    std::vector<std::string>  requests_for_output =
-    {
+        "Stop Prazhskaya: 55.611678, 37.603831",
         "Bus 256",
         "Bus 750",
         "Bus 751",
@@ -212,22 +172,123 @@ void test4()
     };
 
     num_command = requests_for_input.size();
-    //std::cin >> num_command;
-    std::stringstream is_input;
+    std::stringstream is_input("");
+    is_input << num_command << std::endl;
+
     for (size_t i = 0; i < num_command; i++)
     {
         is_input << requests_for_input.at(i) << std::endl;
     }
 
-    ReadInputRequest(transport_catalogue, is_input);
+    transport_catalogue.AddRequest(is_input);
+}
 
-    num_command = requests_for_output.size();
-    //std::cin >> num_command;
-    std::stringstream is_out;
-    for (size_t i = 0; i < num_command; i++)
+void test5()
+{
+    std::string line;
+
+    std::ifstream in("input.json");   // окрываем файл для чтения
+    std::ofstream out("output.json"); // окрываем файл для записи
+
+    TransportCatalogue transport_catalogue(RequestFormat::JSON);
+
+    if (in.is_open() && out.is_open())
     {
-        is_out << requests_for_output.at(i) << std::endl;
+        transport_catalogue.AddRequest(in, out);
+        in.seekg(0);
     }
 
-    ReadOutRequest(transport_catalogue, is_out);
+    in.close();
+    out.close();
+}
+
+void test6()
+{
+    std::string str = "{ \"base_requests\": [ {\"type\": \"Bus\",\"name\" : \"114\",\"stops\" : [\"Морской вокзал\", \"Ривьерский мост\"] ,\"is_roundtrip\" : false},{\"type\": \"Stop\",\"name\" : \"Ривьерский мост\",\"latitude\" : 43.587795,\"longitude\" : 39.716901,\"road_distances\" : {\"Морской вокзал\": 850}},{\"type\": \"Stop\",\"name\" : \"Морской вокзал\",\"latitude\" : 43.581969,\"longitude\" : 39.719848,\"road_distances\" : {\"Ривьерский мост\": 850}}],\"stat_requests\": [{ \"id\": 1, \"type\" : \"Stop\", \"name\" : \"Ривьерский мост\" },{ \"id\": 2, \"type\" : \"Bus\", \"name\" : \"114\" }]} ";
+    std::stringstream str_req(str);
+
+    TransportCatalogue transport_catalogue(RequestFormat::JSON);
+    transport_catalogue.AddRequest(str_req);
+}
+
+void test7()
+{
+    std::stringstream test_data("{\n"
+        "    \"base_requests\": [\n"
+        "      {\n"
+        "        \"type\": \"Bus\",\n"
+        "        \"name\": \"44\",\n"
+        "        \"stops\": [\"A\", \"B\", \"C\", \"D\", \"A\"],\n"
+        "        \"is_roundtrip\": true\n"
+        "      } ,\n"
+        "      {\n"
+        "        \"type\": \"Bus\",\n"
+        "        \"name\": \"00\",\n"
+        "        \"stops\": [],\n"
+        "        \"is_roundtrip\": false\n"
+        "      } ,\n"
+        "      {\n"
+        "        \"type\": \"Stop\",\n"
+        "        \"name\": \"A\",\n"
+        "        \"latitude\": 10,\n"
+        "        \"longitude\": 20,\n"
+        "        \"road_distances\": {\"B\": -100}\n"
+        "      },\n"
+        "      {\n"
+        "        \"type\": \"Stop\",\n"
+        "        \"name\": \"B\",\n"
+        "        \"latitude\": 10,\n"
+        "        \"longitude\": 30,\n"
+        "        \"road_distances\": {\"C\": -100}\n"
+        "      },\n"
+        "      {\n"
+        "        \"type\": \"Stop\",\n"
+        "        \"name\": \"C\",\n"
+        "        \"latitude\": 20,\n"
+        "        \"longitude\": 30,\n"
+        "        \"road_distances\": {\"D\": 100}\n"
+        "      },\n"
+        "      {\n"
+        "        \"type\": \"Stop\",\n"
+        "        \"name\": \"D\",\n"
+        "        \"latitude\": 20,\n"
+        "        \"longitude\": 20,\n"
+        "        \"road_distances\": {\"A\": -100}\n"
+        "      },\n"
+        "      {\n"
+        "        \"type\": \"Stop\",\n"
+        "        \"name\": \"P\",\n"
+        "        \"latitude\": 25,\n"
+        "        \"longitude\": 15,\n"
+        "        \"road_distances\": {\"A\": 70}\n"
+        "      }\n"
+        "    ],\n"
+        "    \"render_settings\": {\n"
+        "      \"width\": 200,\n"
+        "      \"height\": 200,\n"
+        "      \"padding\": 30,\n"
+        "      \"stop_radius\": 5,\n"
+        "      \"line_width\": 14,\n"
+        "      \"bus_label_font_size\": 20,\n"
+        "      \"bus_label_offset\": [7, 15],\n"
+        "      \"stop_label_font_size\": 20,\n"
+        "      \"stop_label_offset\": [7, -3],\n"
+        "      \"underlayer_color\": [255,255,255,0.85],\n"
+        "      \"underlayer_width\": 3,\n"
+        "      \"color_palette\": [\"green\", [255,160,0],\"red\"]\n"
+        "    },\n"
+        "    \"stat_requests\": [\n"
+        "      { \"id\": 1, \"type\": \"Map\" },\n"
+        "      { \"id\": 2, \"type\": \"Stop\", \"name\": \"A\" },\n"
+        "      { \"id\": 3, \"type\": \"Stop\", \"name\": \"P\" },\n"
+        "      { \"id\": 4, \"type\": \"Stop\", \"name\": \"FF\" },\n"
+        "      { \"id\": 5, \"type\": \"Bus\", \"name\": \"44\" },\n"
+        "      { \"id\": 6, \"type\": \"Bus\", \"name\": \"42\" },\n"
+        "      { \"id\": 7, \"type\": \"Bus\", \"name\": \"00\" }\n"
+        "    ]\n"
+        "  }");
+
+    std::ofstream out("output.json"); // окрываем файл для записи
+    TransportCatalogue transport_catalogue(RequestFormat::JSON);
+    transport_catalogue.AddRequest(test_data, out);
 }
