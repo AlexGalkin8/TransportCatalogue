@@ -12,12 +12,12 @@ namespace transport_catalogue
 {
     namespace reader
     {
-        class JSONreader
+        class JSONReader
         {
         public:
-            JSONreader() = delete;
+            JSONReader() = delete;
 
-            JSONreader(database::DataBase& database,
+            JSONReader(database::DataBase& database,
                        renderer::MapRenderer& map_renderer,
                        request_handler::RequestHandler& request_handle);
 

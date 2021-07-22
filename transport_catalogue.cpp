@@ -24,7 +24,7 @@ namespace transport_catalogue
 
         if (request_format_ == RequestFormat::JSON)
         {
-            reader::JSONreader json_reader(database_, map_renderer, request_handler);
+            reader::JSONReader json_reader(database_, map_renderer, request_handler);
             json_reader.AddRequest(is);
 
             setlocale(LC_ALL, "rus");

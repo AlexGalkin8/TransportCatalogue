@@ -10,7 +10,7 @@ namespace transport_catalogue
 {
     namespace reader
     {
-        JSONreader::JSONreader(database::DataBase& database,
+        JSONReader::JSONReader(database::DataBase& database,
                                renderer::MapRenderer& map_renderer,
                                request_handler::RequestHandler& request_handler)
             : database_(database)
@@ -20,7 +20,7 @@ namespace transport_catalogue
         }
 
 
-        void JSONreader::AddRequest(istream& in)
+        void JSONReader::AddRequest(istream& in)
         {
             auto load = json::Load(in).GetRoot().AsDict();
             if (load.count("base_requests"s))
@@ -41,7 +41,7 @@ namespace transport_catalogue
         }
 
 
-        void JSONreader::Answer(ostream& out)
+        void JSONReader::Answer(ostream& out)
         {
             out << "[" << endl;
 
@@ -83,7 +83,7 @@ namespace transport_catalogue
         }
 
 
-        void JSONreader::LoadRequests()
+        void JSONReader::LoadRequests()
         {
             for (const auto& request : base_requests_)
             {
@@ -96,7 +96,7 @@ namespace transport_catalogue
         }
 
 
-        void JSONreader::LoadMapRenderer()
+        void JSONReader::LoadMapRenderer()
         {
             map_renderer_.SetBorder(database_.GetStops()); // Определяем границы
             map_renderer_.SetTrail(database_.GetBuses()); // Отрисовываем линии маршрута
@@ -104,7 +104,7 @@ namespace transport_catalogue
         }
 
 
-        Stop JSONreader::MakeStop(const json::Dict& description) const
+        Stop JSONReader::MakeStop(const json::Dict& description) const
         {
             Stop stop;
 
@@ -124,7 +124,7 @@ namespace transport_catalogue
         }
 
 
-        Bus JSONreader::MakeBus(const json::Dict& description) const
+        Bus JSONReader::MakeBus(const json::Dict& description) const
         {
             Bus bus;
             Route route;
@@ -145,7 +145,7 @@ namespace transport_catalogue
         }
 
 
-        renderer::Settings JSONreader::MakeRenderSettings(const json::Dict& description) const
+        renderer::Settings JSONReader::MakeRenderSettings(const json::Dict& description) const
         {
             
             auto make_point = [](const json::Node& node)
@@ -201,7 +201,7 @@ namespace transport_catalogue
         }
 
 
-        std::string JSONreader::AnswerStop(const json::Dict& description)
+        std::string JSONReader::AnswerStop(const json::Dict& description)
         {
             Responce responce = std::move(request_handler_.RequestToBase(
                 Request{ RequestType::STOP_INFO, description.at("name"s).AsString() }));
@@ -239,7 +239,7 @@ namespace transport_catalogue
         }
 
 
-        std::string JSONreader::AnswerBus(const json::Dict& description)
+        std::string JSONReader::AnswerBus(const json::Dict& description)
         {
             Responce responce = std::move(request_handler_.RequestToBase(
                 Request{ RequestType::BUS_INFO, description.at("name"s).AsString() }));
@@ -269,7 +269,7 @@ namespace transport_catalogue
         }
 
 
-        std::string JSONreader::AnswerMap(const json::Dict& description)
+        std::string JSONReader::AnswerMap(const json::Dict& description)
         {
 
             std::stringstream in("");
