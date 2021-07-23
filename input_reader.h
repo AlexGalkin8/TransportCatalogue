@@ -26,13 +26,13 @@ namespace transport_catalogue
             void AddRequest(std::istream& is, std::ostream& out);
 
         private:
-            void PrintResponce(const objects::Responce& responce, std::ostream& out) const;
+            void PrintResponce(const objects::Response& responce, std::ostream& out) const;
 
             void PrintBusInfo(std::ostream& out, const objects::BusInfo& out_info) const;
 
             void PrintStopInfo(std::ostream& out, const objects::StopInfo& out_info) const;
 
-            objects::Responce ReadRequest(std::string& request_words);
+            objects::Response ReadRequest(std::string& request_words);
 
         private:
             database::DataBase&              database_;         // Ссылка на базу данных Транспортого справочника
@@ -42,11 +42,11 @@ namespace transport_catalogue
 
 
 
-        class StrRequestParser
+        class StringRequestParser
         {
         public:
-            StrRequestParser() = default;
-            StrRequestParser(std::string_view request_str);
+            StringRequestParser() = default;
+            StringRequestParser(std::string_view request_str);
 
             void                     ParseRequest(std::string_view request_str);
 

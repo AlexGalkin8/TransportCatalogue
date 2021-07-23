@@ -21,11 +21,11 @@ namespace transport_catalogue
         struct     Stop;                // Описание остановки
         struct     Route;               // Описание маршрута транспорта
         enum class RequestType;         // Типы запросов к базе данных
-        enum class ResponceType;        // Типы ответа от базы данных
+        enum class ResponseType;        // Типы ответа от базы данных
         struct     BusInfo;             // Структура, хранящая информацию о маршруте для вывода
         struct     StopInfo;            // Структура, хранящая информацию о остановке для вывода
         struct     Request;             // Запрос в БД
-        struct     Responce;            // Ответ БД
+        struct     Response;            // Ответ БД
 
 
         struct Stop
@@ -60,7 +60,7 @@ namespace transport_catalogue
         };
 
 
-        enum class ResponceType
+        enum class ResponseType
         {
             EMPTY = 0,
             BUS_INFO,
@@ -103,9 +103,9 @@ namespace transport_catalogue
         };
 
 
-        struct Responce
+        struct Response
         {
-            ResponceType  responce_type = ResponceType::EMPTY;
+            ResponseType  responce_type = ResponseType::EMPTY;
             ResponceValue value;
         };
 

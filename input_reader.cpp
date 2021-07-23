@@ -35,19 +35,19 @@ namespace transport_catalogue
             for (size_t i = 0; i < num_request; i++)
             {
                 std::getline(is, request_words);
-                Responce responce = ReadRequest(request_words);
+                Response responce = ReadRequest(request_words);
 
-                if (responce.responce_type != ResponceType::EMPTY)
+                if (responce.responce_type != ResponseType::EMPTY)
                     PrintResponce(responce, out);
             }
         }
 
 
-        void StringReader::PrintResponce(const Responce& responce, std::ostream& out) const
+        void StringReader::PrintResponce(const Response& responce, std::ostream& out) const
         {
-            if (responce.responce_type == ResponceType::BUS_INFO)
+            if (responce.responce_type == ResponseType::BUS_INFO)
                 PrintBusInfo(out, std::get<BusInfo>(responce.value));
-            else if (responce.responce_type == ResponceType::STOP_INFO)
+            else if (responce.responce_type == ResponseType::STOP_INFO)
                 PrintStopInfo(out, std::get<StopInfo>(responce.value));
             else
                 std::cout << std::get<std::string>(responce.value) << std::endl;
@@ -91,11 +91,11 @@ namespace transport_catalogue
         }
 
 
-        Responce StringReader::ReadRequest(std::string& request_words)
+        Response StringReader::ReadRequest(std::string& request_words)
         {
-            StrRequestParser request_parser(request_words);
+            StringRequestParser request_parser(request_words);
             Request request = request_parser.GetRequest();
-            Responce responce = request_handler_.RequestToBase(request);
+            Response responce = request_handler_.RequestToBase(request);
 
             auto dis = request_parser.GetDistances();
 
@@ -110,29 +110,29 @@ namespace transport_catalogue
 
 
         /****************************************************
-        ***************   StrRequestParser   ****************
+        ***************   StringRequestParser   ****************
         *****************************************************/
 
 
-        StrRequestParser::StrRequestParser(std::string_view request_str)
+        StringRequestParser::StringRequestParser(std::string_view request_str)
         {
             ParseRequest(request_str);
         }
 
 
-        const Request& StrRequestParser::GetRequest() const
+        const Request& StringRequestParser::GetRequest() const
         {
             return request_;
         }
 
 
-        const std::map<std::string, size_t>& StrRequestParser::GetDistances() const
+        const std::map<std::string, size_t>& StringRequestParser::GetDistances() const
         {
             return distances_;
         }
 
 
-        void StrRequestParser::ParseRequest(std::string_view request_str)
+        void StringRequestParser::ParseRequest(std::string_view request_str)
         {
             if (request_str.empty())
                 throw std::invalid_argument("ParseRequests: Empty request!");
@@ -162,7 +162,7 @@ namespace transport_catalogue
         }
 
 
-        std::string_view StrRequestParser::ReadWord(std::string_view& str, const char end_char)
+        std::string_view StringRequestParser::ReadWord(std::string_view& str, const char end_char)
         {
             if (str.size() == 0)
                 return str;
@@ -209,7 +209,7 @@ namespace transport_catalogue
         }
 
 
-        RequestType StrRequestParser::ParseRequestType(std::string_view request_str) const
+        RequestType StringRequestParser::ParseRequestType(std::string_view request_str) const
         {
             RequestType request_type = RequestType::UNKNOWN;
 
@@ -235,7 +235,7 @@ namespace transport_catalogue
         }
 
 
-        void StrRequestParser::ParseAddRouteRequest(std::string_view request_str)
+        void StringRequestParser::ParseAddRouteRequest(std::string_view request_str)
         {
             request_str.remove_prefix(4); // Пропускаем символы "Bus " в запросе
 
@@ -264,7 +264,7 @@ namespace transport_catalogue
         }
 
 
-        void StrRequestParser::ParseAddStopRequest(std::string_view request_str)
+        void StringRequestParser::ParseAddStopRequest(std::string_view request_str)
         {
             request_str.remove_prefix(5); // Пропускаем символы "Stop " в запросе
 

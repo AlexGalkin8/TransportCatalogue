@@ -19,7 +19,7 @@ namespace transport_catalogue
         public:
             RequestHandler(database::DataBase& base_data, const renderer::MapRenderer& renderer);
 
-            objects::Responce RequestToBase(const objects::Request& request);
+            objects::Response RequestToBase(const objects::Request& request);
 
             // Возвращает информацию о маршруте (запрос Bus)
             std::optional<objects::BusInfo> GetBusInfo(const std::string& bus_name) const;

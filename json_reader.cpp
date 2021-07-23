@@ -203,12 +203,12 @@ namespace transport_catalogue
 
         std::string JSONReader::AnswerStop(const json::Dict& description)
         {
-            Responce responce = std::move(request_handler_.RequestToBase(
+            Response responce = std::move(request_handler_.RequestToBase(
                 Request{ RequestType::STOP_INFO, description.at("name"s).AsString() }));
 
             std::stringstream in("");
 
-            if (responce.responce_type == ResponceType::STOP_INFO)
+            if (responce.responce_type == ResponseType::STOP_INFO)
             {
                 StopInfo info = std::get<StopInfo>(responce.value);
 
@@ -241,13 +241,13 @@ namespace transport_catalogue
 
         std::string JSONReader::AnswerBus(const json::Dict& description)
         {
-            Responce responce = std::move(request_handler_.RequestToBase(
+            Response responce = std::move(request_handler_.RequestToBase(
                 Request{ RequestType::BUS_INFO, description.at("name"s).AsString() }));
 
             std::stringstream in("");
             int req_id = description.at("id"s).AsInt();
 
-            if (responce.responce_type == ResponceType::BUS_INFO)
+            if (responce.responce_type == ResponseType::BUS_INFO)
             {
                 BusInfo info = std::get<BusInfo>(responce.value);
                 in << "    {"s << std::endl

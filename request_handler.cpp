@@ -15,9 +15,9 @@ namespace transport_catalogue
         }
 
 
-        Responce RequestHandler::RequestToBase(const Request& request)
+        Response RequestHandler::RequestToBase(const Request& request)
         {
-            Responce responce;
+            Response responce;
 
             if (request.request_type == RequestType::ADD_BUS)
             {
@@ -33,12 +33,12 @@ namespace transport_catalogue
 
                 if (info.has_value())
                 {
-                    responce.responce_type = ResponceType::BUS_INFO;
+                    responce.responce_type = ResponseType::BUS_INFO;
                     responce.value = info.value();
                 }
                 else
                 {
-                    responce.responce_type = ResponceType::MESSAGE;
+                    responce.responce_type = ResponseType::MESSAGE;
                     responce.value = std::string("Bus " + std::get<InfoRequest>(request.value) + ": not found");
                 }
             }
@@ -49,12 +49,12 @@ namespace transport_catalogue
 
                 if (info.has_value())
                 {
-                    responce.responce_type = ResponceType::STOP_INFO;
+                    responce.responce_type = ResponseType::STOP_INFO;
                     responce.value = info.value();
                 }
                 else
                 {
-                    responce.responce_type = ResponceType::MESSAGE;
+                    responce.responce_type = ResponseType::MESSAGE;
                     responce.value = std::string("Stop " + std::get<InfoRequest>(request.value) + ": not found");
                 }
             }
