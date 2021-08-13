@@ -24,9 +24,9 @@ int main()
     //test2();
     //test3();
     //test4();
-    test5();
+    //test5();
     //test6();
-    //test7();
+    test7();
 }
 
 void test1()
@@ -290,5 +290,5 @@ void test7()
 
     std::ofstream out("output.json"); // окрываем файл для записи
     TransportCatalogue transport_catalogue(RequestFormat::JSON);
-    transport_catalogue.AddRequest(test_data, out);
+    transport_catalogue.AddRequest(test_data);
 }

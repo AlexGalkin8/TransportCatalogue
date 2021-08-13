@@ -36,21 +36,20 @@ namespace transport_catalogue
 
             renderer::Settings MakeRenderSettings(const json::Dict& description) const;
 
-            // Составление ответа на запрос информации об остановке в формате JSON
-            std::string AnswerStop(const json::Dict& description);
+            json::Node AnswerStop(const json::Dict& description);
 
-            // Составление ответа на запрос информации о маршруте в формате JSON
-            std::string AnswerBus(const json::Dict& description);
+            json::Node AnswerBus(const json::Dict& description);
 
-            std::string AnswerMap(const json::Dict& description);
+            json::Node AnswerMap(const json::Dict& description);
 
         private:
-            database::DataBase&              database_;         // Ссылка на базу данных Транспортого справочника
-            renderer::MapRenderer&           map_renderer_;     // Ссылка на класс, визуализирующий информацию Транспортного справочника
-            request_handler::RequestHandler& request_handler_;  // Ссылка на класс, представляющий собой базовый функционал для запросов в базу
+            database::DataBase&              database_;
+            renderer::MapRenderer&           map_renderer_;
+            request_handler::RequestHandler& request_handler_;
 
-            json::Array base_requests_;       // Базовый запрос в базу "base_requests"
-            json::Array stat_requests_;       // Запрос в базу на получение информации "stat_requests"
+            json::Array base_requests_;
+            json::Array stat_requests_;
+            json::Array answer_on_requests_;
         };
 
     } // namespace reader

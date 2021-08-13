@@ -1,4 +1,5 @@
 #include "json_reader.h"
+#include "json_builder.h"
 
 using namespace std;
 using namespace json;
@@ -43,43 +44,21 @@ namespace transport_catalogue
 
         void JSONReader::Answer(ostream& out)
         {
-            out << "[" << endl;
-
-            bool b = true;
             for (const auto& request : stat_requests_)
             {
                 const auto& description = request.AsDict();
                 const auto& type = description.at("type"s).AsString();
-                if (b)
-                {
-                    if (type == "Stop"s)
-                    {
-                        out << AnswerStop(description);
-                        b = false;
-                    }
-                    else if (type == "Bus"s)
-                    {
-                        out << AnswerBus(description);
-                        b = false;
-                    }
-                    else if (type == "Map"s)
-                    {
-                        b = false;
-                        out << AnswerMap(description);
-                    }
 
-                }
-                else
-                {
-                    if (type == "Stop"s)
-                        out << ","s << endl << AnswerStop(description);
-                    else if (type == "Bus"s)
-                        out << ","s << endl << AnswerBus(description);
-                    else if (type == "Map"s)
-                        out << ","s << endl << AnswerMap(description);
-                }
+                if (type == "Stop"s)
+                    answer_on_requests_.push_back(AnswerStop(description));
+                else if (type == "Bus"s)
+                    answer_on_requests_.push_back(AnswerBus(description));
+                else if (type == "Map"s)
+                    answer_on_requests_.push_back(AnswerMap(description));
             }
-            out << endl << "]";
+
+            const Document report(answer_on_requests_);
+            Print(report, out);
         }
 
 
@@ -201,91 +180,69 @@ namespace transport_catalogue
         }
 
 
-        std::string JSONReader::AnswerStop(const json::Dict& description)
+        Node JSONReader::AnswerStop(const json::Dict& description)
         {
             Response responce = std::move(request_handler_.RequestToBase(
                 Request{ RequestType::STOP_INFO, description.at("name"s).AsString() }));
 
-            std::stringstream in("");
+            json::Builder builder_node;
+            builder_node.StartDict().Key("request_id"s).Value(description.at("id"s).AsInt());
 
             if (responce.responce_type == ResponseType::STOP_INFO)
             {
                 StopInfo info = std::get<StopInfo>(responce.value);
+                builder_node.Key("buses"s).StartArray();
 
-                in << "    {" << std::endl
-                    << "        " << "\"buses\": [" << std::endl;
-                bool b = true;
                 for (const string_view& bus_num : info.bus_numbers)
-                {
-                    if (b)
-                    {
-                        in << "            \"" << bus_num << "\"";
-                        b = false;
-                    }
-                    else
-                        in << "," << std::endl << "            \"" << bus_num << "\"";
-                }
-                in << std::endl << "        ]," << std::endl << "        \"request_id\": " << description.at("id"s).AsInt()
-                    << std::endl << "    }";
+                    builder_node.Value(static_cast<std::string>(bus_num));
+                builder_node.EndArray();
             }
             else
             {
-                in << "    {" << std::endl
-                    << "        \"error_message\": " << "\"not found\"" << "," << std::endl
-                    << "        \"request_id\": " << description.at("id"s).AsInt() << std::endl << "    }";
+                builder_node.Key("error_message"s).Value("not found"s);
             }
 
-            return in.str();
+            return builder_node.EndDict().Build();
         }
 
 
-        std::string JSONReader::AnswerBus(const json::Dict& description)
+        Node JSONReader::AnswerBus(const json::Dict& description)
         {
             Response responce = std::move(request_handler_.RequestToBase(
                 Request{ RequestType::BUS_INFO, description.at("name"s).AsString() }));
 
-            std::stringstream in("");
-            int req_id = description.at("id"s).AsInt();
+            json::Builder builder_node;
+            builder_node.StartDict()
+                .Key("request_id"s).Value(description.at("id"s).AsInt());
 
             if (responce.responce_type == ResponseType::BUS_INFO)
             {
                 BusInfo info = std::get<BusInfo>(responce.value);
-                in << "    {"s << std::endl
-                    << "        "s << "\"curvature\": "s << info.curvature << ","s << endl
-                    << "        "s << "\"request_id\": "s << req_id << ","s << endl
-                    << "        "s << "\"route_length\": "s << info.route_length << ","s << endl
-                    << "        "s << "\"stop_count\": "s << info.stops_on_route << ","s << endl
-                    << "        "s << "\"unique_stop_count\": "s << info.unique_stops << endl
-                    << "    }";
+                builder_node.Key("curvature"s).Value(info.curvature)
+                    .Key("route_length"s).Value(static_cast<int>(info.route_length))
+                    .Key("stop_count"s).Value(static_cast<int>(info.stops_on_route))
+                    .Key("unique_stop_count"s).Value(static_cast<int>(info.unique_stops));
             }
             else
             {
-                in << "    {" << std::endl
-                    << "        \"error_message\": " << "\"not found\"" << "," << std::endl
-                    << "        \"request_id\": " << description.at("id"s).AsInt() << std::endl << "    }";
+                builder_node.Key("error_message"s).Value("not found"s);
             }
 
-            return in.str();
+            return builder_node.EndDict().Build();
         }
 
 
-        std::string JSONReader::AnswerMap(const json::Dict& description)
+        Node JSONReader::AnswerMap(const json::Dict& description)
         {
+            json::Builder builder_node;
+            builder_node.StartDict()
+                .Key("request_id"s).Value(description.at("id"s).AsInt());
 
-            std::stringstream in("");
-            int req_id = description.at("id"s).AsInt();
-            in << "    {"s << std::endl
-               << "        "s << "\"map\": "s;
-            //request_handler_.RenderMap().Render(in);
             std::ostringstream s;
             request_handler_.RenderMap().Render(s);
-            in << json::Node(std::move(s.str()));
+            builder_node.Key("map"s).Value(s.str());
 
-            in << ","s << endl
-                << "        "s << "\"request_id\": "s << req_id << endl
-                << "    }";
-
-            return in.str();
+            return builder_node.EndDict().Build();
         }
 
     } // namespace reader

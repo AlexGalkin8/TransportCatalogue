@@ -3,75 +3,56 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <vector>
 #include <variant>
+#include <vector>
 
 namespace json
 {
+
     class Node;
     using Dict = std::map<std::string, Node>;
     using Array = std::vector<Node>;
 
-    using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
-    const std::string CORRECT_NUM_SYMVOL("-1234567890");
-
-    // Эта ошибка должна выбрасываться при ошибках парсинга JSON
     class ParsingError : public std::runtime_error
     {
     public:
         using runtime_error::runtime_error;
     };
 
-    class Node
+    class Node final
+        : private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>
     {
     public:
-        Node() = default;
-        Node(std::nullptr_t value);
-        Node(Array value);
-        Node(Dict value);
-        Node(bool value);
-        Node(int value);
-        Node(double value);
-        Node(std::string value);
+        using variant::variant;
+        using Value = variant;
 
-
-        const Array& AsArray() const;
-        const Dict& AsDict() const;
-        bool AsBool() const;
         int AsInt() const;
         double AsDouble() const;
+        const Array& AsArray() const;
+        Array& AsArray();
+
         const std::string& AsString() const;
+        const Dict& AsDict() const;
+        Dict& AsDict();
+        const Value& GetValue() const;
 
-
+        bool IsInt() const;
+        bool IsPureDouble() const;
+        bool IsDouble() const;
+        bool IsBool() const;
+        bool AsBool() const;
         bool IsNull() const;
         bool IsArray() const;
-        bool IsMap() const;
-        bool IsBool() const;
-        bool IsInt() const;
-        bool IsDouble() const;
-        bool IsPureDouble() const;
         bool IsString() const;
+        bool IsDict() const;
 
-        friend std::ostream& operator<< (std::ostream& out, const Node& node);
-        friend inline bool operator==(const Node& lhs, const Node& rhs);
-        friend inline bool operator!=(const Node& lhs, const Node& rhs);
-    private:
-        Value node_value_ = nullptr;
+        bool operator==(const Node& rhs) const;
     };
-
-
-    inline bool operator==(const Node& lhs, const Node& rhs)
-    {
-        return lhs.node_value_ == rhs.node_value_;
-    }
 
     inline bool operator!=(const Node& lhs, const Node& rhs)
     {
-        return lhs.node_value_ != rhs.node_value_;
+        return !(lhs == rhs);
     }
-
-
-
 
     class Document
     {
@@ -79,44 +60,22 @@ namespace json
         explicit Document(Node root);
         const Node& GetRoot() const;
 
-        friend inline bool operator==(const Document& lhs, const Document& rhs);
-        friend inline bool operator!=(const Document& lhs, const Document& rhs);
-
     private:
         Node root_;
     };
 
     inline bool operator==(const Document& lhs, const Document& rhs)
     {
-        return lhs.root_ == rhs.root_;
+        return lhs.GetRoot() == rhs.GetRoot();
     }
 
     inline bool operator!=(const Document& lhs, const Document& rhs)
     {
-        return lhs.root_ != rhs.root_;
+        return !(lhs == rhs);
     }
 
-
-    Document Load(std::istream& reader);
+    Document Load(std::istream& input);
 
     void Print(const Document& doc, std::ostream& output);
-
-
-
-    struct NodeValue
-    {
-        std::string operator()(const std::nullptr_t) const;
-        std::string operator()(const Array& value) const;
-        std::string operator()(const Dict& value) const;
-        std::string operator()(bool value) const;
-        std::string operator()(int value) const;
-        std::string operator()(double value) const;
-        std::string operator()(const std::string& value) const;
-    };
-
-
-    std::ostream& operator<< (std::ostream& out, const Node& node);
-    std::ostream& operator<< (std::ostream& out, const Array& node_array);
-    std::ostream& operator<< (std::ostream& out, const Dict& node_dict);
 
 }  // namespace json
