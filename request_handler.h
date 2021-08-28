@@ -1,7 +1,8 @@
 #pragma once
 
-#include "domain.h"
+//#include "domain.h"
 #include "map_renderer.h"
+#include "transport_router.h"
 
 #include <memory>
 #include <optional>
@@ -17,7 +18,9 @@ namespace transport_catalogue
         class RequestHandler
         {
         public:
-            RequestHandler(database::DataBase& base_data, const renderer::MapRenderer& renderer);
+            RequestHandler(database::DataBase& base_data,
+                const renderer::MapRenderer& renderer,
+                const router::TransportRouter& router);
 
             objects::Response RequestToBase(const objects::Request& request);
 
@@ -25,17 +28,20 @@ namespace transport_catalogue
             std::optional<objects::BusInfo> GetBusInfo(const std::string& bus_name) const;
 
             // Возвращает маршруты, проходящие через остановку
-            std::optional<objects::StopInfo> GetStopInfo(const std::string& stop_name) const;
+            std::optional<objects::StopInfo> GetStopInfo(const std::string& name) const;
 
-            void AddDistanceBetweenStops(std::string& stop_name, std::map<std::string, size_t>& distances_for_stop);
+            std::optional<router::ReportRouter> GetReportRouter(const std::string_view from,
+                const std::string_view to) const;
 
             svg::Document RenderMap() const;
 
         private:
             // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
-            database::DataBase&          database_;
+            database::DataBase& database_;
             const renderer::MapRenderer& renderer_;
+            const router::TransportRouter& router_;
         };
+
     } // namespace request_handler
 
 } // namespace transport_catalogue

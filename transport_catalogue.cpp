@@ -20,20 +20,21 @@ namespace transport_catalogue
     void TransportCatalogue::AddRequest(std::istream& is, std::ostream& out)
     {
         renderer::MapRenderer           map_renderer;
-        request_handler::RequestHandler request_handler(database_, map_renderer);
+        router::TransportRouter         transport_router(database_);
+        request_handler::RequestHandler request_handler(database_, map_renderer, transport_router);
 
         if (request_format_ == RequestFormat::JSON)
         {
-            reader::JSONReader json_reader(database_, map_renderer, request_handler);
+            reader::JSONReader json_reader(database_, map_renderer, request_handler, transport_router);
             json_reader.AddRequest(is);
 
             setlocale(LC_ALL, "rus");
             json_reader.Answer(out);
         }
-        if (request_format_ == RequestFormat::STR)
-        {
-            reader::StringReader string_reader(database_, map_renderer, request_handler);
-            string_reader.AddRequest(is, out);
-        }
+        //if (request_format_ == RequestFormat::STR)
+        //{
+        //    reader::StringReader string_reader(database_, map_renderer, request_handler);
+        //    string_reader.AddRequest(is, out);
+        //}
     }
 } // namespace transport_catalogue

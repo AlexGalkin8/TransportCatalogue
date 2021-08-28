@@ -4,7 +4,8 @@
 
 #include "json_builder.h"
 
-namespace json {
+namespace json
+{
 
     using namespace std;
     using namespace std::literals;

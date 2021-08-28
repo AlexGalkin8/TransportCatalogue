@@ -9,6 +9,7 @@
 #include <set>
 #include <memory>
 #include <unordered_map>
+#include <optional>
 
 #include "geo.h"
 
@@ -38,8 +39,8 @@ namespace transport_catalogue
 
         struct Route
         {
-            std::deque<std::shared_ptr<Stop>> route_stops;
-            bool                              is_roundtrip = false;
+            std::vector<std::shared_ptr<Stop>> route_stops;
+            bool                              is_roundtrip = true; // true - по кругу | false - едет туда и обратно
         };
 
 
@@ -47,6 +48,13 @@ namespace transport_catalogue
         {
             std::string number;
             Route       bus_route;
+        };
+
+        struct Road
+        {
+            std::string bus_number = "";
+            double      minutes = 0;
+            int         span_count = 0;
         };
 
 
@@ -81,19 +89,27 @@ namespace transport_catalogue
 
         struct StopInfo
         {
-            std::string_view           stop_name = "";
+            std::string_view           name = "";
             std::set<std::string_view> bus_numbers;
         };
 
+        struct HashPairStops
+        {
+        public:
+            size_t operator() (const std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>& pair) const;
+        private:
+            std::hash<void*> p_hasher;
+        };
 
         using InfoRequest = std::string;
         using RequestValue = std::variant<std::nullptr_t, Bus, Stop, InfoRequest>;
         using ResponceValue = std::variant<std::nullptr_t, BusInfo, StopInfo, std::string>;
 
+        // <название остановки, <название остановки до которой проложен маршрут, длина маршрута>>
+        using StopsDistance = std::unordered_map<std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>, size_t, HashPairStops>;
+
         using Buses = std::map<std::string, std::shared_ptr<objects::Bus>>;
         using Stops = std::map<std::string, std::shared_ptr<objects::Stop>>;
-
-        using StopsDistance = std::unordered_map<std::string, std::shared_ptr<std::map<std::string, size_t>>>;
 
 
         struct Request
@@ -110,10 +126,14 @@ namespace transport_catalogue
         };
 
 
-        inline bool operator==(const Bus& lhs, const Bus& rhs);
-        inline bool operator<(const Bus& lhs, const Bus& rhs);
-        inline bool operator==(const Stop& lhs, const Stop& rhs);
+        bool operator==(const Bus& lhs, const Bus& rhs);
+        bool operator<(const Bus& lhs, const Bus& rhs);
+        bool operator==(const Stop& lhs, const Stop& rhs);
+        bool operator>(const Road& lhs, const Road& rhs);
+        bool operator<(const Road& lhs, const Road& rhs);
+        Road operator+(const Road& lhs, const Road& rhs);
     } // namespace objects
+
 
 
 
@@ -124,7 +144,7 @@ namespace transport_catalogue
         public:
             const std::shared_ptr<objects::Bus> FindBus(const std::string& bus_name) const;
 
-            const std::shared_ptr<objects::Stop> FindStop(const std::string& stop_name) const;
+            const std::shared_ptr<objects::Stop> FindStop(const std::string& name) const;
 
             const objects::Buses& GetBuses() const;
 
@@ -134,9 +154,9 @@ namespace transport_catalogue
 
             void AddBus(const objects::Bus& bus);
 
-            void AddDistanceBetweenStops(std::string& stop_name, std::map<std::string, size_t>& distances_for_stop);
+            void SetDistanceBetweenStops(std::shared_ptr<objects::Stop> from, std::shared_ptr<objects::Stop> to, size_t distance);
 
-            const std::shared_ptr<std::map<std::string, size_t>> GetDistanceBetweenStops(std::string& stop_name) const;
+            size_t GetDistanceBetweenStops(std::shared_ptr<objects::Stop> from, std::shared_ptr<objects::Stop> to) const;
 
         private:
             objects::Buses buses_;
@@ -144,6 +164,7 @@ namespace transport_catalogue
 
             objects::StopsDistance length_between_stops_;
         };
+
     } // namespace database
 
 } // namespace transport_catalogue

@@ -71,7 +71,7 @@ namespace transport_catalogue
             std::vector<geo::Coordinates> coord_stops;
             std::for_each(stops.begin(), stops.end(),
                 [&coord_stops](const auto& stop)
-                { 
+                {
                     if (!stop.second->free)
                     {
                         coord_stops.push_back(stop.second->coordinates);
@@ -234,5 +234,7 @@ namespace transport_catalogue
         {
             return index_color_++ % settings_.color_palette.size();
         }
-    }
-}
+
+    } // namespace renderer
+
+} // namespace transport_catalogue

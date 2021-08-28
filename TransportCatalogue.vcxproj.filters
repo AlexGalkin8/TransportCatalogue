@@ -42,10 +42,10 @@
     <ClCompile Include="json_reader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="input_reader.cpp">
+    <ClCompile Include="json_builder.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="json_builder.cpp">
+    <ClCompile Include="transport_router.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,10 +74,19 @@
     <ClInclude Include="json_reader.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="input_reader.h">
+    <ClInclude Include="json_builder.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="json_builder.h">
+    <ClInclude Include="graph.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="ranges.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="router.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="transport_router.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

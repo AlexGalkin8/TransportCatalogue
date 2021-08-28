@@ -1,22 +1,25 @@
 #include "json_reader.h"
 #include "json_builder.h"
 
+
 using namespace std;
 using namespace json;
 using namespace transport_catalogue::objects;
-
 
 
 namespace transport_catalogue
 {
     namespace reader
     {
-        JSONReader::JSONReader(database::DataBase& database,
-                               renderer::MapRenderer& map_renderer,
-                               request_handler::RequestHandler& request_handler)
+        JSONReader::JSONReader(
+            database::DataBase& database,
+            renderer::MapRenderer& map_renderer,
+            request_handler::RequestHandler& request_handler,
+            router::TransportRouter& transport_router)
             : database_(database)
             , map_renderer_(map_renderer)
             , request_handler_(request_handler)
+            , transport_router_(transport_router)
         {
         }
 
@@ -25,20 +28,18 @@ namespace transport_catalogue
         {
             auto load = json::Load(in).GetRoot().AsDict();
             if (load.count("base_requests"s))
-            {
                 base_requests_ = load.at("base_requests"s).AsArray();
-            }
             if (load.count("stat_requests"s))
-            {
                 stat_requests_ = load.at("stat_requests"s).AsArray();
-            }
             if (load.count("render_settings"s))
-            {
                 map_renderer_.SetSettings(MakeRenderSettings(load.at("render_settings").AsDict()));
-            }
+            if (load.count("routing_settings"s))
+                transport_router_.SetSettings(MakeRouterSettings(load.at("routing_settings"s).AsDict()));
 
             LoadRequests();
+            LoadDistances();
             LoadMapRenderer();
+            LoadTransportRouter();
         }
 
 
@@ -55,6 +56,8 @@ namespace transport_catalogue
                     answer_on_requests_.push_back(AnswerBus(description));
                 else if (type == "Map"s)
                     answer_on_requests_.push_back(AnswerMap(description));
+                else if (type == "Route"s)
+                    answer_on_requests_.push_back(AnswerRoute(description));
             }
 
             const Document report(answer_on_requests_);
@@ -77,28 +80,35 @@ namespace transport_catalogue
 
         void JSONReader::LoadMapRenderer()
         {
-            map_renderer_.SetBorder(database_.GetStops()); // Определяем границы
-            map_renderer_.SetTrail(database_.GetBuses()); // Отрисовываем линии маршрута
+            map_renderer_.SetBorder(database_.GetStops());  // Определяем границы
+            map_renderer_.SetTrail(database_.GetBuses());   // Отрисовываем линии маршрута
             map_renderer_.SetStation(database_.GetStops()); // Отрисовываем остановки
+        }
+
+
+        void JSONReader::LoadTransportRouter()
+        {
+            transport_router_.MakeGraph();
+        }
+
+
+        void JSONReader::LoadDistances()
+        {
+            for (const auto& request : base_requests_)
+            {
+                const auto& description = request.AsDict();
+                if (description.at("type"s).AsString() == "Stop"s)
+                    SetDistancesFromStop(description);
+            }
         }
 
 
         Stop JSONReader::MakeStop(const json::Dict& description) const
         {
             Stop stop;
-
             stop.stop_name = description.at("name"s).AsString();
             stop.coordinates.lat = description.at("latitude"s).AsDouble();
             stop.coordinates.lng = description.at("longitude"s).AsDouble();
-
-            if (description.count("road_distances"s))
-            {
-                std::map<std::string, size_t> distances;
-                for (const auto& [stop_name, distance] : description.at("road_distances"s).AsDict())
-                    distances.emplace(stop_name, distance.AsInt());
-                request_handler_.AddDistanceBetweenStops(stop.stop_name, distances);
-            }
-
             return stop;
         }
 
@@ -126,7 +136,7 @@ namespace transport_catalogue
 
         renderer::Settings JSONReader::MakeRenderSettings(const json::Dict& description) const
         {
-            
+
             auto make_point = [](const json::Node& node)
             {
                 using namespace renderer;
@@ -177,6 +187,13 @@ namespace transport_catalogue
             }
 
             return settings;
+        }
+
+
+        router::Settings JSONReader::MakeRouterSettings(const json::Dict& description) const
+        {
+            return { description.at("bus_wait_time"s).AsInt(),
+                     description.at("bus_velocity"s).AsDouble() };
         }
 
 
@@ -243,6 +260,60 @@ namespace transport_catalogue
             builder_node.Key("map"s).Value(s.str());
 
             return builder_node.EndDict().Build();
+        }
+
+
+        json::Node JSONReader::AnswerRoute(const json::Dict& description)
+        {
+            using namespace graph;
+            json::Builder builder_node;
+
+            builder_node.StartDict()
+                .Key("request_id"s).Value(description.at("id"s).AsInt());
+
+            const auto& report = request_handler_.GetReportRouter(description.at("from"s).AsString(),
+                description.at("to"s).AsString());
+
+            if (report)
+            {
+                builder_node.Key("total_time"s).Value(report->total_minutes)
+                    .Key("items"s).StartArray();
+
+                for (const auto& info : report->information)
+                {
+                    builder_node.StartDict()
+                        .Key("type"s).Value("Wait"s)
+                        .Key("time"s).Value(info.wait.minutes)
+                        .Key("stop_name"s).Value(info.wait.name)
+                        .EndDict()
+                        .StartDict()
+                        .Key("type"s).Value("Bus"s)
+                        .Key("time"s).Value(info.bus.minutes)
+                        .Key("bus"s).Value(info.bus.number)
+                        .Key("span_count"s).Value(info.bus.span_count)
+                        .EndDict();
+                }
+
+                builder_node.EndArray();
+            }
+            else
+            {
+                builder_node.Key("error_message"s).Value("not found"s);
+            }
+
+            return builder_node.EndDict().Build();
+        }
+
+
+        void JSONReader::SetDistancesFromStop(const json::Dict& description)
+        {
+            const auto from = database_.FindStop(description.at("name"s).AsString());
+
+            for (const auto& [stop_name, distance] : description.at("road_distances"s).AsDict())
+            {
+                const auto to = database_.FindStop(stop_name);
+                database_.SetDistanceBetweenStops(from, to, distance.AsInt());
+            }
         }
 
     } // namespace reader

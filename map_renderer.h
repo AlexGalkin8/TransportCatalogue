@@ -14,7 +14,7 @@ namespace transport_catalogue
 {
     namespace renderer
     {
-        struct Settings 
+        struct Settings
         {
             double                            width = 0;
             double                            height = 0;
@@ -147,6 +147,6 @@ namespace transport_catalogue
                 zoom_coeff_ = *height_zoom;
         }
 
-    } // namespace renderer
+    }// namespace renderer
 
 } // namespace transport_catalogue

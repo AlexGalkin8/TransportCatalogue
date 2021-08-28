@@ -9,8 +9,13 @@ namespace transport_catalogue
 {
     namespace request_handler
     {
-        RequestHandler::RequestHandler(database::DataBase& base_data, const renderer::MapRenderer& renderer)
-            : database_(base_data), renderer_(renderer)
+        RequestHandler::RequestHandler(
+            database::DataBase& base_data,
+            const renderer::MapRenderer& renderer,
+            const router::TransportRouter& router)
+            : database_(base_data)
+            , renderer_(renderer)
+            , router_(router)
         {
         }
 
@@ -78,26 +83,17 @@ namespace transport_catalogue
                 out_info.bus_number = answer->number;
                 return out_info;
             }
+
             int route_length = 0;
             double route_distance = 0;
             const auto& stops = route.route_stops;
+
             for (auto it = stops.begin(); std::distance(it, stops.end()) != 1; ++it)
             {
                 const auto& current_stop = *it;
                 const auto& next_stop = *(it + 1);
                 route_distance += geo::ComputeDistance(current_stop->coordinates, next_stop->coordinates);
-
-                const auto& dist = database_.GetDistanceBetweenStops(current_stop->stop_name);
-                if (dist != nullptr && dist->count(next_stop->stop_name))
-                    route_length += dist->at(next_stop->stop_name);
-                else
-                {
-                    const auto& dist_tmp = database_.GetDistanceBetweenStops(next_stop->stop_name);
-                    if (dist_tmp != nullptr && dist_tmp->count(current_stop->stop_name))
-                        route_length += dist_tmp->at(current_stop->stop_name);
-                    else
-                        route_length += -1;
-                }
+                route_length += database_.GetDistanceBetweenStops(current_stop, next_stop);
             }
 
             if (!route.is_roundtrip)
@@ -106,18 +102,7 @@ namespace transport_catalogue
                 {
                     const auto& current_stop = *it;
                     const auto& next_stop = *(it + 1);
-
-                    const auto& dist = database_.GetDistanceBetweenStops(current_stop->stop_name);
-                    if (dist != nullptr && dist->count(next_stop->stop_name))
-                        route_length += dist->at(next_stop->stop_name);
-                    else
-                    {
-                        const auto& dist_tmp = database_.GetDistanceBetweenStops(next_stop->stop_name);
-                        if (dist_tmp != nullptr && dist_tmp->count(current_stop->stop_name))
-                            route_length += dist_tmp->at(current_stop->stop_name);
-                        else
-                            route_length += -1;
-                    }
+                    route_length += database_.GetDistanceBetweenStops(current_stop, next_stop);
                 }
                 route_distance *= 2;
             }
@@ -140,15 +125,15 @@ namespace transport_catalogue
         }
 
 
-        std::optional<StopInfo> RequestHandler::GetStopInfo(const std::string& stop_name) const
+        std::optional<StopInfo> RequestHandler::GetStopInfo(const std::string& name) const
         {
-            const auto answer = database_.FindStop(stop_name);
+            const auto answer = database_.FindStop(name);
 
             if (answer == nullptr)
                 return std::nullopt;
 
             StopInfo out_info;
-            out_info.stop_name = answer->stop_name;
+            out_info.name = answer->stop_name;
 
             const Buses& buses = database_.GetBuses();
 
@@ -157,8 +142,8 @@ namespace transport_catalogue
             {
                 const auto it = std::find_if(bus->bus_route.route_stops.begin(),
                     bus->bus_route.route_stops.end(),
-                    [&stop_name](const std::shared_ptr<Stop>& stop_ptr)
-                    { return stop_ptr.get()->stop_name == stop_name; });
+                    [&name](const std::shared_ptr<Stop>& stop_ptr)
+                    { return stop_ptr.get()->stop_name == name; });
 
                 if (it != bus->bus_route.route_stops.end())
                     out_info.bus_numbers.insert(bus->number);
@@ -167,16 +152,18 @@ namespace transport_catalogue
         }
 
 
-        void RequestHandler::AddDistanceBetweenStops(std::string& stop_name, std::map<std::string, size_t>& distances_for_stop)
-        {
-            database_.AddDistanceBetweenStops(stop_name, distances_for_stop);
-        }
-
-
         svg::Document RequestHandler::RenderMap() const
         {
             return renderer_.GetDocument();
         }
+
+
+        std::optional<router::ReportRouter> RequestHandler::GetReportRouter(const std::string_view from,
+            const std::string_view to) const
+        {
+            return router_.GetReportRouter(from, to);
+        }
+
     } // namespace request_handler
 
 } // namespace transport_catalogue
