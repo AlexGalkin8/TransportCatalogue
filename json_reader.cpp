@@ -236,15 +236,15 @@ namespace transport_catalogue::reader
 
     Node JSONReader::AnswerStop(const json::Dict& description)
     {
-        Response responce = std::move(request_handler_.RequestToBase(
+        Response response = std::move(request_handler_.RequestToBase(
             Request{ RequestType::STOP_INFO, description.at("name"s).AsString() }));
 
         json::Builder builder_node;
         builder_node.StartDict().Key("request_id"s).Value(description.at("id"s).AsInt());
 
-        if (responce.responce_type == ResponseType::STOP_INFO)
+        if (response.response_type == ResponseType::STOP_INFO)
         {
-            StopInfo info = std::get<StopInfo>(responce.value);
+            StopInfo info = std::get<StopInfo>(response.value);
             builder_node.Key("buses"s).StartArray();
 
             for (const string_view& bus_num : info.bus_numbers)
@@ -262,16 +262,16 @@ namespace transport_catalogue::reader
 
     Node JSONReader::AnswerBus(const json::Dict& description)
     {
-        Response responce = std::move(request_handler_.RequestToBase(
+        Response response = std::move(request_handler_.RequestToBase(
             Request{ RequestType::BUS_INFO, description.at("name"s).AsString() }));
 
         json::Builder builder_node;
         builder_node.StartDict()
             .Key("request_id"s).Value(description.at("id"s).AsInt());
 
-        if (responce.responce_type == ResponseType::BUS_INFO)
+        if (response.response_type == ResponseType::BUS_INFO)
         {
-            BusInfo info = std::get<BusInfo>(responce.value);
+            BusInfo info = std::get<BusInfo>(response.value);
             builder_node.Key("curvature"s).Value(info.curvature)
                 .Key("route_length"s).Value(static_cast<int>(info.route_length))
                 .Key("stop_count"s).Value(static_cast<int>(info.stops_on_route))

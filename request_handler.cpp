@@ -23,7 +23,7 @@ namespace transport_catalogue::request_handler
 
     Response RequestHandler::RequestToBase(const Request& request)
     {
-        Response responce;
+        Response response;
 
         if (request.request_type == RequestType::ADD_BUS)
         {
@@ -39,13 +39,13 @@ namespace transport_catalogue::request_handler
 
             if (info.has_value())
             {
-                responce.responce_type = ResponseType::BUS_INFO;
-                responce.value = info.value();
+                response.response_type = ResponseType::BUS_INFO;
+                response.value = info.value();
             }
             else
             {
-                responce.responce_type = ResponseType::MESSAGE;
-                responce.value = string("Bus " + get<InfoRequest>(request.value) + ": not found");
+                response.response_type = ResponseType::MESSAGE;
+                response.value = string("Bus " + get<InfoRequest>(request.value) + ": not found");
             }
         }
         else if (request.request_type == RequestType::STOP_INFO)
@@ -55,17 +55,17 @@ namespace transport_catalogue::request_handler
 
             if (info.has_value())
             {
-                responce.responce_type = ResponseType::STOP_INFO;
-                responce.value = info.value();
+                response.response_type = ResponseType::STOP_INFO;
+                response.value = info.value();
             }
             else
             {
-                responce.responce_type = ResponseType::MESSAGE;
-                responce.value = string("Stop " + get<InfoRequest>(request.value) + ": not found");
+                response.response_type = ResponseType::MESSAGE;
+                response.value = string("Stop " + get<InfoRequest>(request.value) + ": not found");
             }
         }
 
-        return responce;
+        return response;
     }
 
 

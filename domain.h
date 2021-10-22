@@ -101,7 +101,7 @@ namespace transport_catalogue::objects
 
     using InfoRequest = std::string;
     using RequestValue = std::variant<std::nullptr_t, Bus, Stop, InfoRequest>;
-    using ResponceValue = std::variant<std::nullptr_t, BusInfo, StopInfo, std::string>;
+    using ResponseValue = std::variant<std::nullptr_t, BusInfo, StopInfo, std::string>;
 
     // <название остановки, <название остановки до которой проложен маршрут, длина маршрута>>
     using StopsDistance = std::unordered_map<std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>, size_t, HashPairStops>;
@@ -119,8 +119,8 @@ namespace transport_catalogue::objects
 
     struct Response
     {
-        ResponseType  responce_type = ResponseType::EMPTY;
-        ResponceValue value;
+        ResponseType  response_type = ResponseType::EMPTY;
+        ResponseValue value;
     };
 
 
