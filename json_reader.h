@@ -1,74 +1,86 @@
 #pragma once
 
-#include <filesystem>
-#include <iostream>
-
 #include "json.h"
+#include "domain.h"
 #include "map_renderer.h"
 #include "request_handler.h"
 #include "transport_router.h"
-//#include "domain.h"
+#include "serialization.h"
+#include "transport_catalogue.h"
 
-namespace transport_catalogue
+#include <filesystem>
+#include <iostream>
+
+
+namespace transport_catalogue::reader
 {
-    namespace reader
+    class JSONReader
     {
-        class JSONReader
-        {
-        public:
-            JSONReader() = delete;
+        using Path = std::filesystem::path;
+    public:
+        JSONReader() = delete;
 
-            JSONReader(
-                database::DataBase& database,
-                renderer::MapRenderer& map_renderer,
-                request_handler::RequestHandler& request_handler,
-                router::TransportRouter& transport_router);
-
-            void AddRequest(std::istream& in = std::cin);
-
-            void Answer(std::ostream& out = std::cout);
-
-        private:
-            void LoadRequests();
-
-            void LoadMapRenderer();
-
-            void LoadTransportRouter();
-
-            void LoadDistances();
+        JSONReader(
+            database::TransportCatalogue& database,
+            renderer::MapRenderer& map_renderer,
+            request_handler::RequestHandler& request_handler,
+            router::TransportRouter& transport_router,
+            serialization::Serialization& serializator);
 
 
-            objects::Stop MakeStop(const json::Dict& description) const;
+        void ReadBase(std::istream& in = std::cin);
 
-            objects::Bus MakeBus(const json::Dict& description) const;
+        void ReadRequests(std::istream& in = std::cin);
+
+        void Answer(std::ostream& out = std::cout);
+
+    private:
+        void LoadTransportCatalogue();
+
+        void LoadMapRenderer();
+
+        void LoadTransportRouter();
+
+        void LoadStops();
+
+        void LoadDistances();
+
+        void LoadBuses();
 
 
-            renderer::Settings MakeRenderSettings(const json::Dict& description) const;
+        objects::Stop MakeStop(const json::Dict& description) const;
 
-            router::Settings MakeRouterSettings(const json::Dict& description) const;
+        objects::Bus MakeBus(const json::Dict& description) const;
 
 
-            json::Node AnswerStop(const json::Dict& description);
+        renderer::Settings MakeRenderSettings(const json::Dict& description) const;
 
-            json::Node AnswerBus(const json::Dict& description);
+        router::Settings MakeRouterSettings(const json::Dict& description) const;
 
-            json::Node AnswerMap(const json::Dict& description);
+        Path MakeSerializationSetting(const json::Dict& description) const;
 
-            json::Node AnswerRoute(const json::Dict& description);
 
-        private:
-            database::DataBase&              database_;
-            renderer::MapRenderer&           map_renderer_;
-            request_handler::RequestHandler& request_handler_;
-            router::TransportRouter&         transport_router_;
+        json::Node AnswerStop(const json::Dict& description);
 
-            json::Array base_requests_;
-            json::Array stat_requests_;
-            json::Array answer_on_requests_;
+        json::Node AnswerBus(const json::Dict& description);
 
-            void SetDistancesFromStop(const json::Dict& description);
-        };
+        json::Node AnswerMap(const json::Dict& description);
 
-    } // namespace reader
+        json::Node AnswerRoute(const json::Dict& description);
+
+
+        void SetDistancesFromStop(const json::Dict& description);
+
+    private:
+        database::TransportCatalogue& database_;
+        renderer::MapRenderer& map_renderer_;
+        request_handler::RequestHandler& request_handler_;
+        router::TransportRouter& transport_router_;
+        serialization::Serialization& serializator_;
+
+        json::Array base_requests_;
+        json::Array stat_requests_;
+        json::Array answer_on_requests_;
+    };
 
 } // namespace transport_catalogue

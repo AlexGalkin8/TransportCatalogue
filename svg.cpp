@@ -1,11 +1,11 @@
 #include "svg.h"
 
-namespace svg {
-
-    using namespace std;
-    using namespace std::literals;
+using namespace std;
+using namespace std::literals;
 
 
+namespace svg
+{
     // ---------- Rgb ------------------
 
     Rgb::Rgb(uint8_t r, uint8_t g,

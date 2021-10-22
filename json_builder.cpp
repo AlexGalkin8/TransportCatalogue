@@ -1,8 +1,9 @@
+#include "json_builder.h"
+
 #include <stdexcept>
 #include <utility>
 #include <variant>
 
-#include "json_builder.h"
 
 namespace json
 {

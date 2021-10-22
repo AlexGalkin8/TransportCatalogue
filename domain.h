@@ -1,170 +1,134 @@
 #pragma once
 
-#include <deque>
+#include "geo.h"
+
+#include <cstdint>
 #include <vector>
 #include <map>
 #include <variant>
 #include <string_view>
 #include <string>
 #include <set>
+#include <utility>
 #include <memory>
 #include <unordered_map>
-#include <optional>
-
-#include "geo.h"
 
 
-namespace transport_catalogue
+namespace transport_catalogue::objects
 {
-    namespace objects
+    struct     Bus;                 // Описание автобуса
+    struct     Stop;                // Описание остановки
+    struct     Route;               // Описание маршрута транспорта
+    enum class RequestType;         // Типы запросов к базе данных
+    enum class ResponseType;        // Типы ответа от базы данных
+    struct     BusInfo;             // Структура, хранящая информацию о маршруте для вывода
+    struct     StopInfo;            // Структура, хранящая информацию о остановке для вывода
+    struct     Request;             // Запрос в БД
+    struct     Response;            // Ответ БД
+
+
+    struct Stop
     {
-        struct     Bus;                 // Описание автобуса
-        struct     Stop;                // Описание остановки
-        struct     Route;               // Описание маршрута транспорта
-        enum class RequestType;         // Типы запросов к базе данных
-        enum class ResponseType;        // Типы ответа от базы данных
-        struct     BusInfo;             // Структура, хранящая информацию о маршруте для вывода
-        struct     StopInfo;            // Структура, хранящая информацию о остановке для вывода
-        struct     Request;             // Запрос в БД
-        struct     Response;            // Ответ БД
+        std::string                   stop_name;
+        geo::Coordinates              coordinates;
+        bool                          free = true;
+    };
 
 
-        struct Stop
-        {
-            std::string                   stop_name;
-            geo::Coordinates              coordinates;
-            bool                          free = true;
-        };
-
-
-        struct Route
-        {
-            std::vector<std::shared_ptr<Stop>> route_stops;
-            bool                              is_roundtrip = true; // true - по кругу | false - едет туда и обратно
-        };
-
-
-        struct Bus
-        {
-            std::string number;
-            Route       bus_route;
-        };
-
-        struct Road
-        {
-            std::string bus_number = "";
-            double      minutes = 0;
-            int         span_count = 0;
-        };
-
-
-        enum class RequestType
-        {
-            UNKNOWN = 0,
-            ADD_STOP,
-            ADD_BUS,
-            BUS_INFO,
-            STOP_INFO
-        };
-
-
-        enum class ResponseType
-        {
-            EMPTY = 0,
-            BUS_INFO,
-            STOP_INFO,
-            MESSAGE
-        };
-
-
-        struct BusInfo
-        {
-            std::string_view bus_number;
-            int64_t          stops_on_route = 0;
-            int64_t          unique_stops = 0;
-            int64_t          route_length = 0;
-            double           curvature = 0.0;
-        };
-
-
-        struct StopInfo
-        {
-            std::string_view           name = "";
-            std::set<std::string_view> bus_numbers;
-        };
-
-        struct HashPairStops
-        {
-        public:
-            size_t operator() (const std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>& pair) const;
-        private:
-            std::hash<void*> p_hasher;
-        };
-
-        using InfoRequest = std::string;
-        using RequestValue = std::variant<std::nullptr_t, Bus, Stop, InfoRequest>;
-        using ResponceValue = std::variant<std::nullptr_t, BusInfo, StopInfo, std::string>;
-
-        // <название остановки, <название остановки до которой проложен маршрут, длина маршрута>>
-        using StopsDistance = std::unordered_map<std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>, size_t, HashPairStops>;
-
-        using Buses = std::map<std::string, std::shared_ptr<objects::Bus>>;
-        using Stops = std::map<std::string, std::shared_ptr<objects::Stop>>;
-
-
-        struct Request
-        {
-            RequestType  request_type = RequestType::UNKNOWN;
-            RequestValue value;
-        };
-
-
-        struct Response
-        {
-            ResponseType  responce_type = ResponseType::EMPTY;
-            ResponceValue value;
-        };
-
-
-        bool operator==(const Bus& lhs, const Bus& rhs);
-        bool operator<(const Bus& lhs, const Bus& rhs);
-        bool operator==(const Stop& lhs, const Stop& rhs);
-        bool operator>(const Road& lhs, const Road& rhs);
-        bool operator<(const Road& lhs, const Road& rhs);
-        Road operator+(const Road& lhs, const Road& rhs);
-    } // namespace objects
-
-
-
-
-    namespace database
+    struct Route
     {
-        class DataBase
-        {
-        public:
-            const std::shared_ptr<objects::Bus> FindBus(const std::string& bus_name) const;
+        std::vector<std::shared_ptr<Stop>> route_stops;
+        bool                              is_roundtrip = true; // true - по кругу | false - едет туда и обратно
+    };
 
-            const std::shared_ptr<objects::Stop> FindStop(const std::string& name) const;
 
-            const objects::Buses& GetBuses() const;
+    struct Bus
+    {
+        std::string number;
+        Route       bus_route;
+    };
 
-            const objects::Stops& GetStops() const;
+    struct Road
+    {
+        std::string bus_number = "";
+        double      minutes = 0;
+        int         span_count = 0;
+    };
 
-            void AddStop(const objects::Stop& stop);
 
-            void AddBus(const objects::Bus& bus);
+    enum class RequestType
+    {
+        UNKNOWN = 0,
+        ADD_STOP,
+        ADD_BUS,
+        BUS_INFO,
+        STOP_INFO
+    };
 
-            void SetDistanceBetweenStops(std::shared_ptr<objects::Stop> from, std::shared_ptr<objects::Stop> to, size_t distance);
 
-            size_t GetDistanceBetweenStops(std::shared_ptr<objects::Stop> from, std::shared_ptr<objects::Stop> to) const;
+    enum class ResponseType
+    {
+        EMPTY = 0,
+        BUS_INFO,
+        STOP_INFO,
+        MESSAGE
+    };
 
-        private:
-            objects::Buses buses_;
-            objects::Stops stops_;
 
-            objects::StopsDistance length_between_stops_;
-        };
+    struct BusInfo
+    {
+        std::string_view bus_number;
+        int64_t          stops_on_route = 0;
+        int64_t          unique_stops = 0;
+        int64_t          route_length = 0;
+        double           curvature = 0.0;
+    };
 
-    } // namespace database
 
-} // namespace transport_catalogue
+    struct StopInfo
+    {
+        std::string_view           name = "";
+        std::set<std::string_view> bus_numbers;
+    };
+
+    struct HashPairStops
+    {
+    public:
+        size_t operator() (const std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>& pair) const;
+    private:
+        std::hash<void*> p_hasher;
+    };
+
+    using InfoRequest = std::string;
+    using RequestValue = std::variant<std::nullptr_t, Bus, Stop, InfoRequest>;
+    using ResponceValue = std::variant<std::nullptr_t, BusInfo, StopInfo, std::string>;
+
+    // <название остановки, <название остановки до которой проложен маршрут, длина маршрута>>
+    using StopsDistance = std::unordered_map<std::pair<std::shared_ptr<Stop>, std::shared_ptr<Stop>>, size_t, HashPairStops>;
+
+    using Buses = std::map<std::string, std::shared_ptr<objects::Bus>>;
+    using Stops = std::map<std::string, std::shared_ptr<objects::Stop>>;
+
+
+    struct Request
+    {
+        RequestType  request_type = RequestType::UNKNOWN;
+        RequestValue value;
+    };
+
+
+    struct Response
+    {
+        ResponseType  responce_type = ResponseType::EMPTY;
+        ResponceValue value;
+    };
+
+
+    bool operator==(const Bus& lhs, const Bus& rhs);
+    bool operator<(const Bus& lhs, const Bus& rhs);
+    bool operator==(const Stop& lhs, const Stop& rhs);
+    bool operator>(const Road& lhs, const Road& rhs);
+    bool operator<(const Road& lhs, const Road& rhs);
+    Road operator+(const Road& lhs, const Road& rhs);
+
+} // namespace transport_catalogue::objects

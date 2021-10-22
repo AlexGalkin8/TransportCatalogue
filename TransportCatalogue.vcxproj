@@ -122,10 +122,14 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>C:\Users\Sasha\source\repos\TransportCatalogue\protobuf\cmake\out\install\x64-Debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Users\Sasha\source\repos\TransportCatalogue\protobuf\cmake\out\install\x64-Debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobufd.lib;libprotobuf-lited.lib;libprotocd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -155,6 +159,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="map_renderer.cpp" />
     <ClCompile Include="request_handler.cpp" />
+    <ClCompile Include="serialization.cpp" />
     <ClCompile Include="svg.cpp" />
     <ClCompile Include="transport_catalogue.cpp" />
     <ClCompile Include="transport_router.cpp" />
@@ -170,9 +175,20 @@
     <ClInclude Include="ranges.h" />
     <ClInclude Include="request_handler.h" />
     <ClInclude Include="router.h" />
+    <ClInclude Include="serialization.h" />
     <ClInclude Include="svg.h" />
     <ClInclude Include="transport_catalogue.h" />
     <ClInclude Include="transport_router.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="graph.proto" />
+    <None Include="map_renderer.proto" />
+    <None Include="svg.proto" />
+    <None Include="transport_catalogue.proto" />
+    <None Include="transport_router.proto" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

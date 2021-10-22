@@ -1,25 +1,38 @@
 #pragma once
 
-//#include "domain.h"
-#include "request_handler.h"
-//#include "input_reader.h"
-#include "json_reader.h"
+#include "domain.h"
 
-namespace transport_catalogue
+#include <memory>
+#include <string>
+
+
+namespace transport_catalogue::database
 {
-    enum class RequestFormat { JSON = 0, STR = 1 };
-
-    //  ласс, представл€ющий собой интерфейс дл€ работы с транспортным каталогом
     class TransportCatalogue
     {
     public:
-        TransportCatalogue(RequestFormat request_format = RequestFormat::STR);
+        const std::shared_ptr<objects::Bus> FindBus(const std::string& bus_name) const;
 
-        void AddRequest(std::istream& is = std::cin, std::ostream& out = std::cout);
+        const std::shared_ptr<objects::Stop> FindStop(const std::string& name) const;
+
+        const objects::Buses& GetBuses() const;
+
+        const objects::Stops& GetStops() const;
+
+        void AddStop(const objects::Stop& stop);
+
+        void AddBus(const objects::Bus& bus);
+
+        void SetDistanceBetweenStops(std::shared_ptr<objects::Stop> from, std::shared_ptr<objects::Stop> to, size_t distance);
+
+        size_t GetDistanceBetweenStops(std::shared_ptr<objects::Stop> from, std::shared_ptr<objects::Stop> to) const;
+
+        const objects::StopsDistance& GetStopsDistance() const;
 
     private:
-        RequestFormat request_format_;
-        database::DataBase database_;
-    };
+        objects::Buses buses_;
+        objects::Stops stops_;
 
-} // namespace transport_catalogue
+        objects::StopsDistance length_between_stops_;
+    };
+} // namespace transport_catalogue::database

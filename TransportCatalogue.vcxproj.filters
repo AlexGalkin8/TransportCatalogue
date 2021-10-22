@@ -9,9 +9,8 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Файлы ресурсов">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Другие файлы">
+      <UniqueIdentifier>{16ef55e8-1d41-4bbd-9f55-a3fdc51cb90f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -36,9 +35,6 @@
     <ClCompile Include="json.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="json_reader.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -46,6 +42,12 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="transport_router.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="serialization.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,5 +91,30 @@
     <ClInclude Include="transport_router.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="serialization.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="transport_catalogue.proto">
+      <Filter>Другие файлы</Filter>
+    </None>
+    <None Include="map_renderer.proto">
+      <Filter>Другие файлы</Filter>
+    </None>
+    <None Include="graph.proto">
+      <Filter>Другие файлы</Filter>
+    </None>
+    <None Include="transport_router.proto">
+      <Filter>Другие файлы</Filter>
+    </None>
+    <None Include="svg.proto">
+      <Filter>Другие файлы</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt">
+      <Filter>Другие файлы</Filter>
+    </Text>
   </ItemGroup>
 </Project>

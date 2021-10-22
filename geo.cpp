@@ -1,7 +1,8 @@
-#define _USE_MATH_DEFINES
 #include "geo.h"
 
+#define _USE_MATH_DEFINES
 #include <cmath>
+
 
 namespace geo
 {
@@ -20,4 +21,5 @@ namespace geo
     {
         return lhs.lat == rhs.lat && lhs.lng == rhs.lng;
     }
+
 }  // namespace geo

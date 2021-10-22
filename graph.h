@@ -7,7 +7,6 @@
 
 namespace graph
 {
-
     using VertexId = size_t;
     using EdgeId = size_t;
 

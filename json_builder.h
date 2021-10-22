@@ -8,7 +8,6 @@
 
 namespace json
 {
-
     class BuildConstructor;
     class BuildContextFirst;
     class BuildContextSecond;

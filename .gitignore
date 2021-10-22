@@ -1,5 +1,7 @@
 Debug/
 Release/
+protobuf/
+x64/
 .vs/
 #TransportCatalogue.sln
 #TransportCatalogue.vcxproj
